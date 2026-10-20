@@ -1,0 +1,29 @@
+# Core Web & Application Framework
+Flask>=3.0.0
+Werkzeug>=3.0.0
+Jinja2>=3.1.2
+
+# PDF Screening Report Generation
+reportlab>=4.0.0
+
+# Image Processing & Array Manipulation
+Pillow>=10.0.0
+numpy>=2.0.0
+opencv-python>=4.10.0
+
+# Deep Learning & Machine Learning Pipeline
+tensorflow>=2.21.0
+keras>=3.15.0
+pandas>=3.0.0
+scikit-learn>=1.9.0
+matplotlib>=3.11.0
+
+# HTTP & Data Retrieval
+requests>=2.32.0
+
+# Testing & Quality Assurance
+pytest>=8.0.0
+
+# Environment Configuration
+python-dotenv>=1.0.0
+

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}How It Works | Skin Cancer Detection System{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem;">
+  <div class="container container-narrow">
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <span class="section-tag">Architecture & Pipeline</span>
+      <h1 class="heading-serif" style="font-size: 2.75rem; margin-bottom: 1rem;">How the AI Screening Engine Works</h1>
+      <p style="color: var(--color-text-muted); font-size: 1.1rem;">
+        A breakdown of the computer vision and deep learning workflow powering our skin lesion screening platform.
+      </p>
+    </div>
+
+    <!-- Pipeline Step 1 -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
+        <div class="step-number" style="margin-bottom: 0;">1</div>
+        <div>
+          <h3 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: var(--color-dark-brown);">Image Ingestion & Strict Validation</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6;">
+            When a user uploads a skin lesion image, the backend performs multi-layer validation before any processing begins:
+          </p>
+          <ul style="margin-left: 1.5rem; color: var(--color-dark-brown); font-size: 0.9rem; line-height: 1.7; margin-top: 0.5rem;">
+            <li><strong>MIME & Header Verification:</strong> Ensures the file is an authentic JPG, JPEG, or PNG, rejecting arbitrarily renamed or corrupted files.</li>
+            <li><strong>Spatial Resolution Check:</strong> Validates that dimensions exceed 50x50 pixels and do not exceed 6000x6000 pixels.</li>
+            <li><strong>Channel Normalization:</strong> Converts images to 3-channel RGB, correcting alpha channels and color spaces.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline Step 2 -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
+        <div class="step-number" style="margin-bottom: 0;">2</div>
+        <div>
+          <h3 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: var(--color-dark-brown);">Preprocessing & Tensor Rescaling</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6;">
+            Dermoscopic images vary significantly in sensor resolution and illumination. Standardized preprocessing prepares input tensors for the neural network:
+          </p>
+          <ul style="margin-left: 1.5rem; color: var(--color-dark-brown); font-size: 0.9rem; line-height: 1.7; margin-top: 0.5rem;">
+            <li><strong>Bilinear Resampling:</strong> Standardizes all input images to <code>224 &times; 224 &times; 3</code> spatial dimensions.</li>
+            <li><strong>Pixel Scaling:</strong> Normalizes floating-point pixel intensities to the <code>[0.0, 1.0]</code> interval.</li>
+            <li><strong>Spatial Quality Assessment:</strong> Calculates local variance, brightness, and contrast metrics for inspection.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline Step 3 -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
+        <div class="step-number" style="margin-bottom: 0;">3</div>
+        <div>
+          <h3 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: var(--color-dark-brown);">Deep CNN Feature Extraction & Classification</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6;">
+            The core architecture leverages a Convolutional Neural Network (CNN) configured for dermoscopy feature extraction:
+          </p>
+          <ul style="margin-left: 1.5rem; color: var(--color-dark-brown); font-size: 0.9rem; line-height: 1.7; margin-top: 0.5rem;">
+            <li><strong>Convolutional Filters:</strong> Learn spatial hierarchies, identifying border irregularities, pigment globules, and vascular streaks.</li>
+            <li><strong>Softmax Probability Distribution:</strong> Generates probability distributions across benign categories and potentially malignant categories.</li>
+            <li><strong>Medical Safety Protocol:</strong> When no trained model file is installed, the system switches to an informative Demo Mode rather than presenting fabricated random predictions.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipeline Step 4 -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div style="display: flex; gap: 1.25rem; align-items: flex-start;">
+        <div class="step-number" style="margin-bottom: 0;">4</div>
+        <div>
+          <h3 style="font-size: 1.35rem; margin-bottom: 0.5rem; color: var(--color-dark-brown);">Structured Screening Report & Consultation</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.95rem; line-height: 1.6;">
+            The user receives an accessible, detailed visual analysis card along with the ability to download a secure PDF screening report:
+          </p>
+          <ul style="margin-left: 1.5rem; color: var(--color-dark-brown); font-size: 0.9rem; line-height: 1.7; margin-top: 0.5rem;">
+            <li>Includes unique report ID, timestamp, and embedded lesion thumbnail.</li>
+            <li>Presents genuine model confidence score (or clearly identifies demo/unavailable mode).</li>
+            <li>Provides a formal recommendation to consult a licensed dermatologist.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Card -->
+    <div class="card card-pastel-sage" style="text-align: center; padding: 2.5rem;">
+      <h3 style="font-size: 1.5rem; margin-bottom: 0.75rem; color: var(--color-dark-sage);">Ready to explore the screening workflow?</h3>
+      <p style="margin-bottom: 1.5rem; color: var(--color-dark-brown); max-width: 500px; margin-left: auto; margin-right: auto;">
+        Sign in to your account to upload a skin lesion photograph or explore reference HAM10000 educational cases.
+      </p>
+      {% if current_user %}
+        <a href="{{ url_for('analysis.upload') }}" class="btn btn-primary btn-lg">Upload an Image</a>
+      {% else %}
+        <div style="display: flex; gap: 1rem; justify-content: center;">
+          <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login to Account</a>
+          <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">Create Free Account</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>{% block title %}{{ project_name }}{% endblock %} | AI Healthcare Screening</title>
+
+  <!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Site Navigation Header -->
+  <header class="site-header">
+    <div class="container">
+      <nav class="navbar" aria-label="Main Navigation">
+        <a href="{{ url_for('main.index') }}" class="nav-brand">
+          <span class="nav-logo-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
+            </svg>
+          </span>
+          <span>DermaCare AI</span>
+        </a>
+
+        <!-- Desktop & Mobile Navigation Links -->
+        <ul class="nav-menu" id="navMenu">
+          <li><a href="{{ url_for('main.index') }}" class="nav-link {% if request.endpoint == 'main.index' %}active{% endif %}">Home</a></li>
+          <li><a href="{{ url_for('main.how_it_works') }}" class="nav-link {% if request.endpoint == 'main.how_it_works' %}active{% endif %}">How It Works</a></li>
+          <li><a href="{{ url_for('main.skin_health') }}" class="nav-link {% if request.endpoint == 'main.skin_health' %}active{% endif %}">Skin Health</a></li>
+
+          {% if current_user %}
+            {% if current_user.role == 'admin' %}
+              <li><a href="{{ url_for('admin.dashboard') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('admin.') %}active{% endif %}" style="color: #792b37; font-weight: 700;">Admin Portal</a></li>
+            {% endif %}
+            <li><a href="{{ url_for('analysis.dashboard') }}" class="nav-link {% if request.endpoint == 'analysis.dashboard' %}active{% endif %}">Dashboard</a></li>
+            <li><a href="{{ url_for('analysis.history') }}" class="nav-link {% if request.endpoint == 'analysis.history' %}active{% endif %}">History</a></li>
+            <li><a href="{{ url_for('analysis.upload') }}" class="btn btn-primary btn-sm">Analyze Image</a></li>
+            <li>
+              <a href="{{ url_for('auth.profile') }}" class="nav-link {% if request.endpoint == 'auth.profile' %}active{% endif %}" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.75rem; background: var(--color-warm-beige); border-radius: var(--radius-pill); border: 1px solid var(--color-border);" title="View My Profile">
+                <span style="width: 24px; height: 24px; border-radius: 50%; background: var(--color-dark-sage); color: #fff; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center;">
+                  {{ current_user.full_name[:1] }}
+                </span>
+                <span style="font-size: 0.85rem; font-weight: 600;">{{ current_user.full_name.split()[0] }}</span>
+              </a>
+            </li>
+            <li><a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-sm">Logout</a></li>
+          {% else %}
+            <li><a href="{{ url_for('auth.login') }}" class="nav-link {% if request.endpoint == 'auth.login' %}active{% endif %}">Login</a></li>
+            <li><a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Register</a></li>
+          {% endif %}
+        </ul>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle Navigation Menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Flash Messages -->
+  <div class="container flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}" role="alert">
+            <span>{{ message }}</span>
+            <button class="alert-close" aria-label="Close message">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <!-- Main Body Content -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Global Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h5>{{ project_name }}</h5>
+          <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0.75rem;">
+            An academic software engineering mini-project developing a deep learning CNN system for preliminary skin lesion image analysis.
+          </p>
+          <span class="badge badge-sage">
+            {{ global_model_status.message }}
+          </span>
+        </div>
+
+        <div class="footer-col">
+          <h5>Quick Navigation</h5>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('main.index') }}">Home</a></li>
+            <li><a href="{{ url_for('main.how_it_works') }}">How It Works</a></li>
+            <li><a href="{{ url_for('main.skin_health') }}">Skin Health & ABCDE</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>User Portal</h5>
+          <ul class="footer-links">
+            {% if current_user %}
+              {% if current_user.role == 'admin' %}
+                <li><a href="{{ url_for('admin.dashboard') }}" style="color: #792b37; font-weight: 600;">Admin Dashboard</a></li>
+              {% endif %}
+              <li><a href="{{ url_for('analysis.dashboard') }}">Dashboard</a></li>
+              <li><a href="{{ url_for('analysis.upload') }}">Upload Lesion Image</a></li>
+              <li><a href="{{ url_for('analysis.history') }}">Analysis History</a></li>
+              <li><a href="{{ url_for('auth.logout') }}">Logout ({{ current_user.full_name }})</a></li>
+            {% else %}
+              <li><a href="{{ url_for('auth.login') }}">User Login</a></li>
+              <li><a href="{{ url_for('auth.register') }}">Create Account</a></li>
+            {% endif %}
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h5>Project Credentials</h5>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+            <strong>College:</strong> {{ affiliation }}<br/>
+            <strong>Project Authors:</strong> {{ authors }}<br/>
+            <strong>Core Stack:</strong> Python, TensorFlow, Keras, OpenCV, NumPy, Flask
+          </p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; {{ current_year }} {{ project_name }}. Built for academic and educational evaluation.</p>
+        <p><strong>Medical Disclaimer:</strong> This application is intended solely for preliminary screening and educational exploration. It is not a clinical medical diagnosis.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Core JavaScript -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

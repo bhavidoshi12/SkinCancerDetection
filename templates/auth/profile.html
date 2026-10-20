@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Member Profile | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem; padding-bottom: 4rem;">
+  <div class="container container-narrow">
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 1.5rem;">
+      <a href="{{ url_for('analysis.dashboard') }}" style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+        &larr; Back to Dashboard
+      </a>
+    </div>
+
+    <!-- Profile Header Card -->
+    <div class="card card-warm-beige" style="padding: 2.5rem; margin-bottom: 2rem;">
+      <div style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
+        <!-- Avatar Circle -->
+        <div style="width: 96px; height: 96px; border-radius: 50%; background: linear-gradient(135deg, var(--color-pastel-sage), var(--color-blush-pink)); border: 3px solid var(--color-white); box-shadow: var(--shadow-md); display: flex; align-items: center; justify-content: center; font-family: var(--font-serif); font-size: 2.25rem; font-weight: 700; color: var(--color-dark-brown);">
+          {{ user.full_name[:1] }}
+        </div>
+
+        <!-- Member Overview -->
+        <div style="flex: 1; min-width: 240px;">
+          <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.35rem;">
+            <span class="badge badge-sage">Registered Member</span>
+            {% if user.email == 'bhavidoshi12@gmail.com' or user.username == 'bhavi12' %}
+              <span class="badge badge-pink">Official College Demo Account</span>
+            {% endif %}
+          </div>
+          <h1 class="heading-serif" style="font-size: 2.2rem; margin-bottom: 0.25rem; color: var(--color-dark-brown);">
+            {{ user.full_name }}
+          </h1>
+          <p style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 0.5rem;">
+            Username: <strong>@{{ user.username or user.email.split('@')[0] }}</strong> &bull; Role: <strong>{{ user.role|capitalize }}</strong>
+          </p>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted);">
+            Member since: {{ user.created_at[:10] }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account Details & Activity Summary -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+      <div class="card">
+        <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--color-dark-brown);">
+          Screening Activity
+        </h3>
+        <ul style="list-style: none; font-size: 0.9rem; line-height: 2;">
+          <li><strong>Total Analysis Records:</strong> {{ stats.total }}</li>
+          <li><strong>Genuine Model Predictions:</strong> {{ stats.genuine }}</li>
+          <li><strong>Benign / Routine Scans:</strong> {{ stats.benign }}</li>
+          <li><strong>High Attention / Suspicious:</strong> {{ stats.attention }}</li>
+          <li><strong>Preloaded Sample Records:</strong> {{ stats.demo_count }}</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size: 1.15rem; margin-bottom: 1rem; color: var(--color-dark-brown);">
+          Account Security & Credentials
+        </h3>
+        <ul style="list-style: none; font-size: 0.9rem; line-height: 2;">
+          <li><strong>Registered Email:</strong> {{ user.email }}</li>
+          <li><strong>Password Security:</strong> Hashed with scrypt</li>
+          <li><strong>Session Status:</strong> Active &bull; HTTPS / Localhost</li>
+          <li><strong>Data Privacy:</strong> Isolated patient storage</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Update Profile Form -->
+    <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
+      <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--color-dark-brown);">
+        Edit Profile Information
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.5rem;">
+        Update your personal display preferences
+      </p>
+
+      <form method="POST" action="{{ url_for('auth.profile') }}">
+        <div class="form-group">
+          <label for="full_name" class="form-label">Full Name</label>
+          <input type="text" id="full_name" name="full_name" class="form-control" value="{{ user.full_name }}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="username" class="form-label">Username</label>
+          <input type="text" id="username" name="username" class="form-control" value="{{ user.username or '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address (Immutable)</label>
+          <input type="email" class="form-control" value="{{ user.email }}" disabled style="background-color: var(--color-warm-beige);">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">
+          Save Profile Changes
+        </button>
+      </form>
+    </div>
+
+    <!-- Action Bar -->
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="{{ url_for('analysis.dashboard') }}" class="btn btn-secondary">Go to Dashboard</a>
+      <a href="{{ url_for('analysis.history') }}" class="btn btn-secondary">View Prediction History</a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-outline" style="color: var(--color-danger); border-color: var(--color-danger);">
+        Sign Out
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

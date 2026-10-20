@@ -1,0 +1,31 @@
+# Python virtual environment
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local SQLite databases and instance data
+instance/
+*.db
+*.sqlite3
+
+# Uploaded images (Patient privacy protection)
+uploads/*
+!uploads/.gitkeep
+
+# Environment secrets
+.env
+
+# Pytest cache & logs
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary backups
+backup_v1/
+
+# IDE files
+.vscode/
+.idea/
+*.swp

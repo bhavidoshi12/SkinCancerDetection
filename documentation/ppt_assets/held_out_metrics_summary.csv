@@ -1,0 +1,7 @@
+Metric,Held-Out Test Result (Percentage %),Raw Value (0-1 Scale),Evaluation Split
+Overall Test Accuracy,11.76%,0.1176,51 Samples (Stratified)
+Macro Precision,3.83%,0.0383,51 Samples (Stratified)
+Macro Recall (Sensitivity),10.43%,0.1043,51 Samples (Stratified)
+Macro F1-Score,5.57%,0.0557,51 Samples (Stratified)
+Weighted F1-Score,6.2%,0.062,51 Samples (Stratified)
+ROC-AUC (Weighted OvR),56.6%,0.5660000000000001,51 Samples (Stratified)

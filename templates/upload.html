@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Skin Lesion Image | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem; padding-bottom: 4rem;">
+  <div class="container container-narrow">
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+      <span class="badge badge-sage" style="margin-bottom: 0.5rem;">Image Ingestion</span>
+      <h1 class="heading-serif" style="font-size: 2.4rem; margin-bottom: 0.5rem;">Upload Skin Lesion Photograph</h1>
+      <p style="color: var(--color-text-muted); font-size: 1rem; max-width: 580px; margin: 0 auto;">
+        Submit a close-up, focused image of a skin lesion or mole for automated spatial inspection and screening analysis.
+      </p>
+    </div>
+
+    <!-- Engine Status Notification -->
+    {% if not model_status.available %}
+      <div class="card card-warm-beige" style="margin-bottom: 2rem; border-left: 5px solid var(--color-warning);">
+        <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--color-warning); flex-shrink: 0; margin-top: 2px;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <div>
+            <strong style="color: var(--color-dark-brown); font-size: 0.95rem;">Demo / Informative Mode Notice</strong>
+            <p style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 0.25rem;">
+              No pre-trained TensorFlow model file is currently detected in <code>ml_models/</code>. 
+              The application will perform strict validation, extract spatial metrics (resolution, aspect ratio, contrast), 
+              and present an informative preview without fabricating fake diagnostic scores.
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Upload Guidelines Box -->
+    <div class="card card-pastel-sage" style="margin-bottom: 2rem; padding: 1.5rem;">
+      <h3 style="font-size: 1.05rem; margin-bottom: 0.5rem; color: var(--color-dark-sage);">
+        Photograph Guidelines for Optimal Screening
+      </h3>
+      <ul style="font-size: 0.88rem; color: var(--color-dark-brown); line-height: 1.6; padding-left: 1.25rem;">
+        <li><strong>Close-up framing:</strong> Center the skin lesion in the frame. Avoid wide-angle full-body or landscape photos.</li>
+        <li><strong>Optimal lighting:</strong> Ensure uniform, indirect, natural lighting. Minimize heavy flash glare or deep shadows.</li>
+        <li><strong>Sharp focus:</strong> Avoid motion blur. Lesion borders should be crisp and clearly distinguishable.</li>
+        <li><strong>Supported formats:</strong> JPG, JPEG, and PNG files up to 10 MB in file size.</li>
+      </ul>
+    </div>
+
+    <!-- Upload Form Card -->
+    <div class="card" style="padding: 2.5rem;">
+      <div id="uploadError" class="alert alert-danger" style="display: none;" role="alert"></div>
+
+      <form id="uploadForm" action="{{ url_for('analysis.analyze') }}" method="POST" enctype="multipart/form-data">
+        <!-- Drag & Drop Zone -->
+        <div class="upload-dropzone" id="dropzone">
+          <div class="upload-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Drag & Drop Lesion Image Here</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+            or click anywhere within the dashed area to browse local files
+          </p>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('imageFileInput').click();">
+            Select Image File
+          </button>
+          <input 
+            type="file" 
+            id="imageFileInput" 
+            name="image" 
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png" 
+            style="display: none;" 
+            required
+          >
+        </div>
+
+        <!-- Live Image Preview Container -->
+        <div class="preview-container" id="previewContainer">
+          <div style="display: inline-block; position: relative;">
+            <img id="previewImage" class="preview-image" src="" alt="Selected Lesion Preview">
+          </div>
+          <div style="margin-top: 0.75rem;">
+            <strong id="fileNameDisplay" style="font-size: 0.9rem; color: var(--color-dark-brown);"></strong>
+            <span id="fileSizeDisplay" style="font-size: 0.8rem; color: var(--color-text-muted); margin-left: 0.5rem;"></span>
+          </div>
+          <button type="button" id="removeImageBtn" class="btn btn-outline btn-sm" style="margin-top: 0.75rem; color: var(--color-danger); border-color: var(--color-danger);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            Remove & Choose Another
+          </button>
+        </div>
+
+        <!-- Submit Button -->
+        <div style="margin-top: 2rem;">
+          <button type="submit" id="analyzeBtn" class="btn btn-primary btn-block btn-lg" disabled>
+            <span class="spinner" id="analyzeSpinner" style="display: none; margin-right: 0.5rem;"></span>
+            <span id="analyzeBtnText">Analyze Image</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Educational Sample Cases Fallback -->
+    <div class="card card-warm-beige" style="margin-top: 2.5rem; text-align: center; padding: 1.75rem;">
+      <h3 style="font-size: 1.05rem; margin-bottom: 0.35rem; color: var(--color-dark-brown);">Don't have a lesion photo right now?</h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+        Load a standard HAM10000 reference study case to test the analysis workflow and PDF report generation.
+      </p>
+      <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+        <form method="POST" action="{{ url_for('analysis.sample_analysis') }}" style="display: inline;">
+          <input type="hidden" name="sample_id" value="HAM_BENIGN_01">
+          <button type="submit" class="btn btn-secondary btn-sm">Load HAM10000 Benign Nevus</button>
+        </form>
+        <form method="POST" action="{{ url_for('analysis.sample_analysis') }}" style="display: inline;">
+          <input type="hidden" name="sample_id" value="HAM_MELANOMA_02">
+          <button type="submit" class="btn btn-accent btn-sm">Load HAM10000 Melanoma Case</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

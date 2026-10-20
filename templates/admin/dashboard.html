@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block title %}Administrator Portal | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem; padding-bottom: 5rem;">
+  <div class="container">
+    
+    <!-- Admin Header Banner -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2.5rem;">
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.4rem;">
+          <span class="badge badge-danger" style="font-weight: 700; letter-spacing: 0.5px; padding: 0.25rem 0.65rem;">
+            SYSTEM ADMINISTRATOR CONSOLE
+          </span>
+          <span class="badge badge-sage">Role-Based Access Control Active</span>
+        </div>
+        <h1 class="heading-serif" style="font-size: 2.3rem; margin-bottom: 0.35rem; color: #493F3A;">
+          Administrative Command Center
+        </h1>
+        <p style="color: var(--color-text-muted); font-size: 0.95rem; margin: 0; max-width: 760px;">
+          Centralized monitoring of TensorFlow deep learning model status, user authentication directory, and global skin lesion screening activity.
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <a href="{{ url_for('analysis.dashboard') }}" class="btn btn-outline">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem; vertical-align: text-bottom;">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          Patient View
+        </a>
+        <a href="{{ url_for('analysis.upload') }}" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem; vertical-align: text-bottom;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Test Upload
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary">Sign Out</a>
+      </div>
+    </div>
+
+    <!-- System Telemetry & Model Engine Card -->
+    <div class="card card-pastel-sage" style="margin-bottom: 2rem; padding: 1.5rem 1.75rem; border: 1px solid var(--color-sage-border);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.25rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;">
+            <span class="badge {% if telemetry.model_loaded %}badge-success{% else %}badge-warning{% endif %}" style="font-size: 0.8rem; font-weight: 700;">
+              {% if telemetry.model_loaded %}MODEL ENGINE HEALTHY{% else %}FALLBACK ENGINE{% endif %}
+            </span>
+            <span style="font-weight: 600; color: #324a2e; font-size: 1.05rem;">
+              TensorFlow / Keras MobileNetV2 Architecture
+            </span>
+          </div>
+          <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #2c4228;">
+            {{ model_status.message }}
+          </p>
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.8rem; color: #435b3e;">
+            <span><strong>Model Weights:</strong> {{ telemetry.model_size_mb }} MB (.keras)</span>
+            <span>&bull;</span>
+            <span><strong>Diagnostics:</strong> {{ telemetry.classes_count }} Lesion Classes (HAM10000)</span>
+            <span>&bull;</span>
+            <span><strong>Runtime:</strong> Python {{ telemetry.python_version }}</span>
+            <span>&bull;</span>
+            <span><strong>Database:</strong> SQLite Isolated File Store</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(255,255,255,0.7); padding: 0.75rem 1.25rem; border-radius: var(--radius-sm); border: 1px solid rgba(138, 171, 143, 0.4); text-align: right;">
+          <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Engine Integrity</div>
+          <div style="font-size: 1.2rem; font-weight: 700; color: #2b593f;">100% Operational</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Administrative KPI Grid -->
+    <div class="kpi-grid" style="margin-bottom: 2.5rem;">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: var(--color-warm-beige); color: var(--color-dark-brown);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-num">{{ stats.total_users }}</div>
+          <div class="kpi-label">Registered Accounts</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: var(--color-blush-pink); color: #792b37;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-num">{{ stats.total_records }}</div>
+          <div class="kpi-label">Total Screenings</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: var(--color-pastel-sage); color: var(--color-dark-sage);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-num">{{ stats.genuine_records }}</div>
+          <div class="kpi-label">Real DL Inferences</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: #f7e1e4; color: #a32238;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-num">{{ stats.concerning_count }}</div>
+          <div class="kpi-label">High-Risk / Urgent Cases</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 1: User Accounts Directory -->
+    <div class="card card-clean" style="margin-bottom: 2.5rem; padding: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
+        <div>
+          <h2 class="heading-serif" style="font-size: 1.4rem; margin-bottom: 0.25rem;">
+            Registered User Directory
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+            Role-Based Access Control (RBAC) overview. Cryptographic password hashes and personal session keys are omitted for security.
+          </p>
+        </div>
+        <span class="badge badge-sage">{{ users|length }} User Accounts</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="text-align: left; border-bottom: 2px solid var(--color-border); background-color: var(--color-warm-beige);">
+              <th style="padding: 0.75rem 1rem;">ID</th>
+              <th style="padding: 0.75rem 1rem;">Full Name</th>
+              <th style="padding: 0.75rem 1rem;">Email Address</th>
+              <th style="padding: 0.75rem 1rem;">Username</th>
+              <th style="padding: 0.75rem 1rem;">Role</th>
+              <th style="padding: 0.75rem 1rem; text-align: center;">Scans</th>
+              <th style="padding: 0.75rem 1rem;">Registered On</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+              <tr style="border-bottom: 1px solid var(--color-border); {% if u.role == 'admin' %}background: #fff5f6;{% endif %}">
+                <td style="padding: 0.75rem 1rem; font-weight: 600; color: var(--color-text-muted);">#{{ u.id }}</td>
+                <td style="padding: 0.75rem 1rem; font-weight: 600;">
+                  {{ u.full_name }}
+                  {% if u.id == current_user.id %}
+                    <span class="badge badge-sage" style="font-size: 0.65rem; margin-left: 0.35rem;">You</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.85rem;">{{ u.email }}</td>
+                <td style="padding: 0.75rem 1rem; color: var(--color-text-muted);">
+                  {% if u.username %}@{{ u.username }}{% else %}<span style="opacity: 0.5;">&mdash;</span>{% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem;">
+                  {% if u.role == 'admin' %}
+                    <span class="badge badge-danger" style="font-size: 0.7rem;">Administrator</span>
+                  {% elif u.role == 'physician' %}
+                    <span class="badge badge-sage" style="font-size: 0.7rem;">Physician</span>
+                  {% else %}
+                    <span class="badge badge-secondary" style="font-size: 0.7rem; background: var(--color-warm-beige); color: var(--color-dark-brown);">Patient</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 600;">
+                  {{ u.analysis_count }}
+                </td>
+                <td style="padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--color-text-muted);">
+                  {{ u.created_at[:10] if u.created_at else 'Prior' }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section 2: Global Lesion Screening Activity Log -->
+    <div class="card card-clean" style="padding: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
+        <div>
+          <h2 class="heading-serif" style="font-size: 1.4rem; margin-bottom: 0.25rem;">
+            Global Lesion Screening Activity Log
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+            Surveillance of recent image screening submissions, classifications, confidence metrics, and engine modes across all accounts.
+          </p>
+        </div>
+        <span class="badge badge-sage">Last {{ recent_records|length }} Scans</span>
+      </div>
+
+      {% if recent_records %}
+        <div class="table-responsive">
+          <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+              <tr style="text-align: left; border-bottom: 2px solid var(--color-border); background-color: var(--color-warm-beige);">
+                <th style="padding: 0.75rem 0.85rem;">Scan ID</th>
+                <th style="padding: 0.75rem 0.85rem;">User</th>
+                <th style="padding: 0.75rem 0.85rem;">File Name</th>
+                <th style="padding: 0.75rem 0.85rem;">Diagnostic Classification</th>
+                <th style="padding: 0.75rem 0.85rem; text-align: center;">Confidence</th>
+                <th style="padding: 0.75rem 0.85rem;">Engine</th>
+                <th style="padding: 0.75rem 0.85rem;">Timestamp</th>
+                <th style="padding: 0.75rem 0.85rem; text-align: right;">Report</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rec in recent_records %}
+                <tr style="border-bottom: 1px solid var(--color-border);">
+                  <td style="padding: 0.75rem 0.85rem; font-weight: 600; color: var(--color-text-muted);">
+                    #{{ rec.id }}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem;">
+                    <strong>{{ rec.user_full_name or 'Unknown User' }}</strong>
+                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">{{ rec.user_email }}</div>
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem; font-family: monospace; font-size: 0.8rem;">
+                    {% if rec.original_filename %}
+                      {{ rec.original_filename[:20] }}{% if rec.original_filename|length > 20 %}...{% endif %}
+                    {% else %}
+                      <span style="color: var(--color-text-muted);">scan_image.jpg</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem;">
+                    {% if rec.classification %}
+                      {% if 'Melanoma' in rec.classification or 'Malignant' in rec.classification or 'Carcinoma' in rec.classification %}
+                        <span style="color: #9c2838; font-weight: 600;">{{ rec.classification }}</span>
+                      {% else %}
+                        <span style="color: #2e5934; font-weight: 600;">{{ rec.classification }}</span>
+                      {% endif %}
+                    {% else %}
+                      <span style="color: var(--color-text-muted);">Preliminary Scan</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem; text-align: center;">
+                    {% if rec.confidence_score is not none %}
+                      <span class="badge {% if rec.confidence_score >= 80 %}badge-sage{% else %}badge-warning{% endif %}">
+                        {{ "%.1f"|format(rec.confidence_score) }}%
+                      </span>
+                    {% else %}
+                      <span class="badge" style="background: var(--color-warm-beige); color: var(--color-dark-brown); font-size: 0.75rem;">
+                        Demo / N/A
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem;">
+                    {% if rec.is_demo %}
+                      <span class="badge" style="background: var(--color-warm-beige); color: var(--color-dark-brown); font-size: 0.7rem;">Demo Simulation</span>
+                    {% else %}
+                      <span class="badge badge-success" style="font-size: 0.7rem;">Genuine CNN</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem; font-size: 0.8rem; color: var(--color-text-muted);">
+                    {{ rec.created_at[:16] if rec.created_at else 'Recent' }}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem; text-align: right;">
+                    <a href="{{ url_for('analysis.record_detail', record_id=rec.id) }}" class="btn btn-outline btn-sm" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;">
+                      View
+                    </a>
+                    <a href="{{ url_for('analysis.download_report', record_id=rec.id) }}" class="btn btn-secondary btn-sm" style="padding: 0.25rem 0.6rem; font-size: 0.75rem;" title="Download PDF">
+                      PDF
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="color: var(--color-text-muted); text-align: center; padding: 2rem 0;">
+          No screening records have been created in the database yet.
+        </p>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}

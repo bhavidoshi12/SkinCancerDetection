@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Screening History | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem; padding-bottom: 4rem;">
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+      <div>
+        <span class="badge badge-sage" style="margin-bottom: 0.5rem;">Records Archive</span>
+        <h1 class="heading-serif" style="font-size: 2.25rem; margin-bottom: 0.25rem;">Analysis & Screening History</h1>
+        <p style="color: var(--color-text-muted); font-size: 0.95rem;">
+          Access your past skin lesion analyses, examine diagnostic notes, and download official PDF reports.
+        </p>
+      </div>
+      <div>
+        <a href="{{ url_for('analysis.upload') }}" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Upload New Image
+        </a>
+      </div>
+    </div>
+
+    <!-- Filter and Search Toolbar -->
+    <div class="card card-warm-beige" style="margin-bottom: 2rem; padding: 1.25rem;">
+      <form method="GET" action="{{ url_for('analysis.history') }}" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 220px;">
+          <label for="searchQuery" class="form-label" style="font-size: 0.85rem;">Search by File or Finding</label>
+          <input 
+            type="text" 
+            id="searchQuery" 
+            name="q" 
+            class="form-control" 
+            placeholder="e.g. Nevus, Melanoma, scan.jpg" 
+            value="{{ search_query or '' }}"
+          >
+        </div>
+
+        <div style="min-width: 180px;">
+          <label for="statusFilter" class="form-label" style="font-size: 0.85rem;">Engine Mode</label>
+          <select id="statusFilter" name="status" class="form-control">
+            <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Records</option>
+            <option value="genuine_model" {% if status_filter == 'genuine_model' %}selected{% endif %}>Genuine AI Model</option>
+            <option value="demo_simulation" {% if status_filter == 'demo_simulation' %}selected{% endif %}>Demo / Educational</option>
+          </select>
+        </div>
+
+        <div>
+          <button type="submit" class="btn btn-secondary" style="height: 42px;">
+            Filter Records
+          </button>
+          {% if search_query or status_filter != 'all' %}
+            <a href="{{ url_for('analysis.history') }}" class="btn btn-outline" style="height: 42px; margin-left: 0.25rem;">Clear</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- History List -->
+    {% if records %}
+      <div class="card" style="padding: 0; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 850px; font-size: 0.9rem;">
+          <thead>
+            <tr style="background-color: var(--color-warm-beige); text-align: left; border-bottom: 2px solid var(--color-border);">
+              <th style="padding: 1rem 1.25rem;">Preview</th>
+              <th style="padding: 1rem 1.25rem;">Original File</th>
+              <th style="padding: 1rem 1.25rem;">Analysis Date</th>
+              <th style="padding: 1rem 1.25rem;">Classification Finding</th>
+              <th style="padding: 1rem 1.25rem;">Confidence</th>
+              <th style="padding: 1rem 1.25rem;">Status</th>
+              <th style="padding: 1rem 1.25rem; text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rec in records %}
+              <tr style="border-bottom: 1px solid rgba(101, 124, 104, 0.12);">
+                <td style="padding: 0.9rem 1.25rem;">
+                  <div style="width: 52px; height: 52px; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--color-border);">
+                    <img 
+                      src="{{ url_for('analysis.serve_upload', filename=rec.stored_filename) }}" 
+                      alt="Lesion" 
+                      style="width: 100%; height: 100%; object-fit: cover;"
+                      onerror="this.src='https://placehold.co/52x52?text=Image';"
+                    >
+                  </div>
+                </td>
+                <td style="padding: 0.9rem 1.25rem;">
+                  <strong>{{ rec.original_filename }}</strong><br/>
+                  <span style="font-size: 0.8rem; color: var(--color-text-muted);">
+                    Size: {{ "%.1f"|format(rec.file_size / 1024) }} KB
+                  </span>
+                </td>
+                <td style="padding: 0.9rem 1.25rem; white-space: nowrap; color: var(--color-text-muted);">
+                  {{ rec.created_at[:16] }}
+                </td>
+                <td style="padding: 0.9rem 1.25rem;">
+                  <strong style="color: {% if 'Malignant' in rec.classification or 'Melanoma' in rec.classification %}var(--color-danger){% else %}var(--color-dark-sage){% endif %};">
+                    {{ rec.classification }}
+                  </strong>
+                </td>
+                <td style="padding: 0.9rem 1.25rem;">
+                  {% if rec.confidence_score is not none %}
+                    <span style="font-weight: 700;">{{ "%.1f"|format(rec.confidence_score) }}%</span>
+                  {% else %}
+                    <span style="color: var(--color-text-muted); font-size: 0.85rem;">N/A (Demo)</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.9rem 1.25rem;">
+                  {% if rec.result_status == 'genuine_model' and not rec.is_demo %}
+                    <span class="badge badge-success">Genuine Model Prediction</span>
+                  {% else %}
+                    <span class="badge badge-warning">Demo / Sample Record</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.9rem 1.25rem; text-align: right; white-space: nowrap;">
+                  <a href="{{ url_for('analysis.view_result', record_id=rec.id) }}" class="btn btn-outline btn-sm" style="margin-right: 0.25rem;">
+                    Details
+                  </a>
+                  <a href="{{ url_for('analysis.download_report', record_id=rec.id) }}" class="btn btn-secondary btn-sm" title="Download PDF Report">
+                    PDF
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <!-- Empty State -->
+      <div class="card" style="text-align: center; padding: 4rem 2rem;">
+        <div style="width: 64px; height: 64px; margin: 0 auto 1.25rem; background-color: var(--color-warm-beige); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-dark-brown);">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <h3 class="heading-serif" style="font-size: 1.4rem; margin-bottom: 0.5rem;">No Matching History Records</h3>
+        <p style="color: var(--color-text-muted); font-size: 0.95rem; max-width: 480px; margin: 0 auto 1.5rem;">
+          {% if search_query or status_filter != 'all' %}
+            No records match the selected filter criteria. Try clearing your search query.
+          {% else %}
+            You haven't uploaded any lesion images yet. Analyze your first photo to build your screening archive.
+          {% endif %}
+        </p>
+        <a href="{{ url_for('analysis.upload') }}" class="btn btn-primary">
+          Upload New Image
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

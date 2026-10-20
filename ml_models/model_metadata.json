@@ -1,0 +1,57 @@
+{
+  "model_name": "DermaCare MobileNetV2 HAM10000 7-Class",
+  "architecture": "MobileNetV2 Transfer Learning",
+  "input_shape": [
+    224,
+    224,
+    3
+  ],
+  "normalization": "pixel / 255.0",
+  "classes": [
+    "akiec",
+    "bcc",
+    "bkl",
+    "df",
+    "mel",
+    "nv",
+    "vasc"
+  ],
+  "class_full_names": {
+    "akiec": "Actinic Keratoses / Intraepithelial Carcinoma (Pre-cancerous)",
+    "bcc": "Basal Cell Carcinoma (Malignant)",
+    "bkl": "Benign Keratosis-like Lesions (Solar Lentigo / Seborrheic Keratosis)",
+    "df": "Dermatofibroma (Benign)",
+    "mel": "Melanoma (Malignant Skin Cancer)",
+    "nv": "Melanocytic Nevi (Common Benign Mole)",
+    "vasc": "Vascular Lesions (Angioma / Hemorrhage)"
+  },
+  "class_to_idx": {
+    "akiec": 0,
+    "bcc": 1,
+    "bkl": 2,
+    "df": 3,
+    "mel": 4,
+    "nv": 5,
+    "vasc": 6
+  },
+  "idx_to_class": {
+    "0": "akiec",
+    "1": "bcc",
+    "2": "bkl",
+    "3": "df",
+    "4": "mel",
+    "5": "nv",
+    "6": "vasc"
+  },
+  "dataset": "HAM10000 & ISIC Archive",
+  "total_images_used": 350,
+  "train_samples": 244,
+  "val_samples": 55,
+  "test_samples": 51,
+  "epochs_completed": 6,
+  "training_duration_seconds": 118.65,
+  "final_val_accuracy": 20.0,
+  "final_val_loss": 2.6851,
+  "created_at": "2026-10-19 16:12:17 UTC",
+  "disclaimer": "Research prototype. Not for clinical diagnosis."
+}

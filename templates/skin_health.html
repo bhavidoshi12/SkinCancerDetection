@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Skin Health Information & ABCDE Rule | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem;">
+  <div class="container container-narrow">
+    <div style="text-align: center; margin-bottom: 3rem;">
+      <span class="section-tag">Patient & Clinical Education</span>
+      <h1 class="heading-serif" style="font-size: 2.75rem; margin-bottom: 1rem;">Understanding Skin Health & Lesions</h1>
+      <p style="color: var(--color-text-muted); font-size: 1.1rem;">
+        Essential knowledge on skin cancer awareness, lesion self-monitoring, and the clinical ABCDE rule for early detection.
+      </p>
+    </div>
+
+    <!-- What is Skin Cancer -->
+    <div class="card" style="margin-bottom: 2.5rem;">
+      <h2 style="font-size: 1.5rem; margin-bottom: 1rem; color: var(--color-dark-brown);">What is Skin Cancer?</h2>
+      <p style="font-size: 0.95rem; color: var(--color-dark-brown); line-height: 1.7;">
+        Skin cancer is the abnormal and uncontrolled proliferation of skin cells, predominantly triggered by ultraviolet (UV) radiation from sunlight or tanning beds. 
+        It generally falls into two broad classifications:
+      </p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1.25rem;">
+        <div style="background-color: var(--color-warm-beige); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <h4 style="color: var(--color-dark-brown); margin-bottom: 0.35rem;">Non-Melanoma Skin Cancer</h4>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5;">
+            Includes <strong>Basal Cell Carcinoma (BCC)</strong> and <strong>Squamous Cell Carcinoma (SCC)</strong>. Highly prevalent, slow-growing, and exceptionally treatable when addressed early.
+          </p>
+        </div>
+        <div style="background-color: var(--color-blush-pink); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-card-border);">
+          <h4 style="color: #792b37; margin-bottom: 0.35rem;">Melanoma</h4>
+          <p style="font-size: 0.85rem; color: #55343a; line-height: 1.5;">
+            Arises in pigment-producing melanocytes. Although less frequent than BCC, it is more aggressive and prone to metastasize if not identified in its earliest, localized stages.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- The ABCDE Rule Card Grid -->
+    <div style="margin-bottom: 2.5rem;">
+      <div style="text-align: center; margin-bottom: 1.75rem;">
+        <span class="section-tag">Clinical Self-Check</span>
+        <h2 style="font-size: 2rem;">The ABCDE Rule of Melanoma Detection</h2>
+        <p style="font-size: 0.95rem; color: var(--color-text-muted);">
+          Dermatologists recommend periodic skin self-examinations using the standard ABCDE criteria.
+        </p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        <!-- A -->
+        <div class="card" style="display: flex; gap: 1.5rem; align-items: center; border-left: 6px solid var(--color-dark-sage);">
+          <div style="font-family: var(--font-serif); font-size: 2.5rem; font-weight: 700; color: var(--color-dark-sage); min-width: 50px; text-align: center;">A</div>
+          <div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-dark-brown);">Asymmetry</h3>
+            <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0;">
+              One half of the mole or spot does not match the other half. Normal benign moles are typically symmetrical and circular or oval in shape.
+            </p>
+          </div>
+        </div>
+
+        <!-- B -->
+        <div class="card" style="display: flex; gap: 1.5rem; align-items: center; border-left: 6px solid var(--color-muted-rose);">
+          <div style="font-family: var(--font-serif); font-size: 2.5rem; font-weight: 700; color: var(--color-muted-rose); min-width: 50px; text-align: center;">B</div>
+          <div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-dark-brown);">Border Irregularity</h3>
+            <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0;">
+              The edges are irregular, ragged, notched, scalloped, or blurred, rather than smooth and sharply defined against surrounding skin.
+            </p>
+          </div>
+        </div>
+
+        <!-- C -->
+        <div class="card" style="display: flex; gap: 1.5rem; align-items: center; border-left: 6px solid var(--color-dark-sage);">
+          <div style="font-family: var(--font-serif); font-size: 2.5rem; font-weight: 700; color: var(--color-dark-sage); min-width: 50px; text-align: center;">C</div>
+          <div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-dark-brown);">Color Variation</h3>
+            <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0;">
+              The color is not uniform across the lesion. May display varying shades of tan, brown, black, or occasionally patches of pink, red, white, or slate-blue.
+            </p>
+          </div>
+        </div>
+
+        <!-- D -->
+        <div class="card" style="display: flex; gap: 1.5rem; align-items: center; border-left: 6px solid var(--color-muted-rose);">
+          <div style="font-family: var(--font-serif); font-size: 2.5rem; font-weight: 700; color: var(--color-muted-rose); min-width: 50px; text-align: center;">D</div>
+          <div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-dark-brown);">Diameter</h3>
+            <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0;">
+              The spot is larger than 6 millimeters across (approximately the size of a standard pencil eraser), although melanomas can sometimes be smaller when detected very early.
+            </p>
+          </div>
+        </div>
+
+        <!-- E -->
+        <div class="card" style="display: flex; gap: 1.5rem; align-items: center; border-left: 6px solid var(--color-dark-sage);">
+          <div style="font-family: var(--font-serif); font-size: 2.5rem; font-weight: 700; color: var(--color-dark-sage); min-width: 50px; text-align: center;">E</div>
+          <div>
+            <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem; color: var(--color-dark-brown);">Evolving</h3>
+            <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0;">
+              The most critical indicator. Any mole or patch that changes in size, shape, elevation, color, or develops new sensations such as itching, crusting, or bleeding.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Screening vs Professional Diagnosis -->
+    <div class="card card-warm-beige" style="margin-bottom: 2.5rem;">
+      <h3 style="font-size: 1.35rem; margin-bottom: 0.75rem; color: var(--color-dark-brown);">AI Screening vs. Professional Dermatological Diagnosis</h3>
+      <p style="font-size: 0.95rem; color: var(--color-dark-brown); line-height: 1.7; margin-bottom: 1rem;">
+        It is essential to understand the distinction between preliminary digital screening and comprehensive medical diagnosis:
+      </p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;">
+        <div style="background-color: var(--color-white); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <h4 style="color: var(--color-dark-sage); margin-bottom: 0.35rem;">AI Screening Platforms</h4>
+          <ul style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.6; padding-left: 1.2rem;">
+            <li>Statistical pattern recognition on 2D images.</li>
+            <li>Calculates mathematical similarity to training sets.</li>
+            <li>Identifies potential warning signs for prioritization.</li>
+            <li>Does not inspect tactile texture, depth, or pathology.</li>
+          </ul>
+        </div>
+
+        <div style="background-color: var(--color-white); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <h4 style="color: var(--color-dark-brown); margin-bottom: 0.35rem;">Clinical Dermatologist</h4>
+          <ul style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.6; padding-left: 1.2rem;">
+            <li>Polarized dermoscopic multi-spectral optical evaluation.</li>
+            <li>Considers patient family history, UV exposure, and total body mole map.</li>
+            <li>Performs histological biopsy and microscopic pathology.</li>
+            <li>Definitive clinical diagnosis and treatment planning.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- When to Seek Medical Attention -->
+    <div class="card card-pastel-pink" style="margin-bottom: 2.5rem;">
+      <h3 style="font-size: 1.35rem; margin-bottom: 0.75rem; color: #792b37;">When Should You Consult a Doctor?</h3>
+      <p style="font-size: 0.95rem; color: #55343a; line-height: 1.6; margin-bottom: 0.75rem;">
+        You should consult a board-certified dermatologist or primary healthcare practitioner immediately if you notice:
+      </p>
+      <ul style="font-size: 0.9rem; color: #55343a; line-height: 1.7; padding-left: 1.5rem;">
+        <li>A mole that is growing quickly or noticeably altering its shape or border.</li>
+        <li>A sore, scab, or spot that fails to heal after 3 to 4 weeks.</li>
+        <li>A lesion that oozes, bleeds, itches, or becomes tender to touch.</li>
+        <li>The appearance of a new dark mark under a toenail or fingernail.</li>
+        <li>An "ugly duckling" lesion that looks markedly different from all other moles on your skin.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+{% endblock %}

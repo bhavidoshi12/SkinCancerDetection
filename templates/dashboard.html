@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem; padding-bottom: 4rem;">
+  <div class="container">
+    <!-- Header Banner -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 2.5rem;">
+      <div style="display: flex; align-items: center; gap: 1.25rem;">
+        <div style="width: 72px; height: 72px; border-radius: 50%; overflow: hidden; border: 3px solid var(--color-muted-rose); background: var(--color-blush-pink); display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); flex-shrink: 0;">
+          {% if user.avatar %}
+            <img src="{{ url_for('static', filename='images/' + user.avatar) }}" alt="{{ user.full_name }}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <span style="display: none; font-size: 1.5rem; font-weight: 700; color: var(--color-dark-brown);">{{ user.full_name[:2].upper() }}</span>
+          {% else %}
+            <span style="font-size: 1.5rem; font-weight: 700; color: var(--color-dark-brown);">{{ user.full_name[:2].upper() }}</span>
+          {% endif %}
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+            <span class="badge badge-sage">User Portal</span>
+            {% if user.username %}
+              <span style="font-size: 0.85rem; color: var(--color-text-muted); font-weight: 600;">@{{ user.username }}</span>
+            {% endif %}
+            <a href="{{ url_for('auth.profile') }}" style="font-size: 0.8rem; color: var(--color-dark-sage); text-decoration: underline;">Edit Profile &rarr;</a>
+          </div>
+          <h1 class="heading-serif" style="font-size: 2.2rem; margin-bottom: 0.25rem;">
+            Welcome, {{ user.full_name }}
+          </h1>
+          <p style="color: var(--color-text-muted); font-size: 0.95rem; margin: 0;">
+            Manage your skin lesion image analyses, review previous screening records, and generate clinical PDF reports.
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <a href="{{ url_for('auth.profile') }}" class="btn btn-outline">My Profile</a>
+        <a href="{{ url_for('analysis.upload') }}" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Upload New Image
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary">Sign Out</a>
+      </div>
+    </div>
+
+    <!-- Engine Mode Alert -->
+    <div class="card {% if model_status.available %}card-pastel-sage{% else %}card-warm-beige{% endif %}" style="margin-bottom: 2rem; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span class="badge {% if model_status.available %}badge-success{% else %}badge-warning{% endif %}">
+          {% if model_status.available %}GENUINE MODEL ACTIVE{% else %}DEMO MODE ACTIVE{% endif %}
+        </span>
+        <span style="font-size: 0.9rem; color: var(--color-dark-brown);">
+          {{ model_status.message }}
+        </span>
+      </div>
+      <a href="{{ url_for('main.how_it_works') }}" class="btn btn-outline btn-sm">Learn More</a>
+    </div>
+
+    <!-- Summary Stats Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: var(--color-warm-beige); color: var(--color-dark-brown);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-num">{{ stats.total }}</div>
+          <div class="kpi-label">Total Analyses</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: var(--color-pastel-sage); color: var(--color-dark-sage);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-num">{{ stats.benign }}</div>
+          <div class="kpi-label">Benign / Non-Cancerous</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: var(--color-blush-pink); color: var(--color-muted-rose);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-num">{{ stats.attention }}</div>
+          <div class="kpi-label">Requires Attention</div>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background-color: #f3efe9; color: var(--color-text-muted);">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="kpi-num">{{ stats.demo_count }}</div>
+          <div class="kpi-label">Demo / Simulations</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Analyses Section -->
+    <div style="margin-top: 2.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+          <h2 class="heading-serif" style="font-size: 1.6rem;">Recent Screening Records</h2>
+          <p style="color: var(--color-text-muted); font-size: 0.9rem;">Your latest uploaded lesion evaluations and reports</p>
+        </div>
+        {% if recent_records %}
+          <a href="{{ url_for('analysis.history') }}" class="btn btn-secondary btn-sm">View All History &rarr;</a>
+        {% endif %}
+      </div>
+
+      {% if recent_records %}
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+              <tr style="background-color: var(--color-warm-beige); text-align: left; border-bottom: 1px solid var(--color-border);">
+                <th style="padding: 1rem 1.25rem;">Thumbnail</th>
+                <th style="padding: 1rem 1.25rem;">File & Date</th>
+                <th style="padding: 1rem 1.25rem;">Classification Finding</th>
+                <th style="padding: 1rem 1.25rem;">Confidence</th>
+                <th style="padding: 1rem 1.25rem;">Engine Status</th>
+                <th style="padding: 1rem 1.25rem; text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for rec in recent_records %}
+                <tr style="border-bottom: 1px solid rgba(101, 124, 104, 0.1);">
+                  <td style="padding: 1rem 1.25rem;">
+                    <div style="width: 48px; height: 48px; border-radius: 8px; overflow: hidden; background-color: #000; border: 1px solid var(--color-border);">
+                      <img 
+                        src="{{ url_for('analysis.serve_upload', filename=rec.stored_filename) }}" 
+                        alt="Thumbnail" 
+                        style="width: 100%; height: 100%; object-fit: cover;"
+                        onerror="this.src='https://placehold.co/48x48?text=Scan';"
+                      >
+                    </div>
+                  </td>
+                  <td style="padding: 1rem 1.25rem;">
+                    <strong>{{ rec.original_filename }}</strong><br/>
+                    <span style="font-size: 0.8rem; color: var(--color-text-muted);">{{ rec.created_at[:16] }}</span>
+                  </td>
+                  <td style="padding: 1rem 1.25rem;">
+                    <span style="font-weight: 600; color: {% if 'Malignant' in rec.classification or 'Melanoma' in rec.classification %}var(--color-danger){% else %}var(--color-dark-sage){% endif %};">
+                      {{ rec.classification }}
+                    </span>
+                  </td>
+                  <td style="padding: 1rem 1.25rem;">
+                    {% if rec.confidence_score is not none %}
+                      <strong>{{ "%.1f"|format(rec.confidence_score) }}%</strong>
+                    {% else %}
+                      <span style="color: var(--color-text-muted); font-size: 0.85rem;">N/A (Demo)</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 1rem 1.25rem;">
+                    {% if rec.result_status == 'genuine_model' and not rec.is_demo %}
+                      <span class="badge badge-success">Genuine Model Prediction</span>
+                    {% else %}
+                      <span class="badge badge-warning">Demo / Sample Record</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 1rem 1.25rem; text-align: right; white-space: nowrap;">
+                    <a href="{{ url_for('analysis.view_result', record_id=rec.id) }}" class="btn btn-outline btn-sm" style="margin-right: 0.35rem;">View</a>
+                    <a href="{{ url_for('analysis.download_report', record_id=rec.id) }}" class="btn btn-secondary btn-sm" title="Download PDF Report">
+                      PDF
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <!-- Helpful Empty State -->
+        <div class="card" style="text-align: center; padding: 3.5rem 2rem;">
+          <div style="width: 64px; height: 64px; margin: 0 auto 1.25rem; background-color: var(--color-warm-beige); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-dark-brown);">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </div>
+          <h3 class="heading-serif" style="font-size: 1.4rem; margin-bottom: 0.5rem;">No Skin Lesions Analyzed Yet</h3>
+          <p style="color: var(--color-text-muted); font-size: 0.95rem; max-width: 480px; margin: 0 auto 1.75rem;">
+            You have not uploaded any skin lesion photographs. Start by uploading a clear, well-lit photo of a mole, or explore a reference HAM10000 educational study case below.
+          </p>
+          <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('analysis.upload') }}" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              Upload Your First Image
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Quick Educational Demo Case Study Bar -->
+    <div class="card card-warm-beige" style="margin-top: 2.5rem; padding: 1.75rem;">
+      <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--color-dark-brown);">
+        Explore HAM10000 Educational Reference Cases
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 1.25rem;">
+        Test the screening workflow and PDF report generator using verified clinical benchmark cases from the HAM10000 dataset (transparently marked as educational simulations).
+      </p>
+
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <form method="POST" action="{{ url_for('analysis.sample_analysis') }}">
+          <input type="hidden" name="sample_id" value="HAM_BENIGN_01">
+          <button type="submit" class="btn btn-secondary btn-sm">
+            Load Sample Case: Benign Nevus (HAM10000)
+          </button>
+        </form>
+
+        <form method="POST" action="{{ url_for('analysis.sample_analysis') }}">
+          <input type="hidden" name="sample_id" value="HAM_MELANOMA_02">
+          <button type="submit" class="btn btn-accent btn-sm">
+            Load Sample Case: Superficial Melanoma (HAM10000)
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

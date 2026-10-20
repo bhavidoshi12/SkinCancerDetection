@@ -1,0 +1,145 @@
+{
+  "model_evaluated": "skin_cancer_cnn_7class.keras",
+  "overall_summary": {
+    "test_accuracy": 11.76,
+    "macro_precision": 0.0383,
+    "macro_recall": 0.1043,
+    "macro_f1": 0.0557,
+    "weighted_f1": 0.062,
+    "roc_auc_weighted": 0.566,
+    "total_test_samples": 51
+  },
+  "per_class_metrics": {
+    "akiec": {
+      "class_name": "Actinic Keratoses (akiec)",
+      "support": 8,
+      "precision": 0.0,
+      "recall_sensitivity": 0.0,
+      "specificity": 1.0,
+      "f1_score": 0.0
+    },
+    "bcc": {
+      "class_name": "Basal Cell Carcinoma (bcc)",
+      "support": 6,
+      "precision": 0.0,
+      "recall_sensitivity": 0.0,
+      "specificity": 0.9556,
+      "f1_score": 0.0
+    },
+    "bkl": {
+      "class_name": "Benign Keratosis (bkl)",
+      "support": 7,
+      "precision": 0.0,
+      "recall_sensitivity": 0.0,
+      "specificity": 0.9773,
+      "f1_score": 0.0
+    },
+    "df": {
+      "class_name": "Dermatofibroma (df)",
+      "support": 9,
+      "precision": 0.1429,
+      "recall_sensitivity": 0.4444,
+      "specificity": 0.4286,
+      "f1_score": 0.2162
+    },
+    "mel": {
+      "class_name": "Melanoma (mel)",
+      "support": 6,
+      "precision": 0.0,
+      "recall_sensitivity": 0.0,
+      "specificity": 0.9778,
+      "f1_score": 0.0
+    },
+    "nv": {
+      "class_name": "Melanocytic Nevus (nv)",
+      "support": 8,
+      "precision": 0.0,
+      "recall_sensitivity": 0.0,
+      "specificity": 0.9302,
+      "f1_score": 0.0
+    },
+    "vasc": {
+      "class_name": "Vascular Lesion (vasc)",
+      "support": 7,
+      "precision": 0.125,
+      "recall_sensitivity": 0.2857,
+      "specificity": 0.6818,
+      "f1_score": 0.1739
+    }
+  },
+  "confusion_matrix": [
+    [
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      6
+    ],
+    [
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      4
+    ],
+    [
+      0,
+      1,
+      0,
+      5,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      1,
+      4,
+      0,
+      3,
+      1
+    ],
+    [
+      0,
+      1,
+      0,
+      4,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      7,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      4,
+      1,
+      0,
+      2
+    ]
+  ],
+  "class_order": [
+    "akiec",
+    "bcc",
+    "bkl",
+    "df",
+    "mel",
+    "nv",
+    "vasc"
+  ],
+  "evaluation_notes": "Held-out test set evaluation on unseen dermoscopic images. These metrics represent academic research performance on the HAM10000 benchmark, not verified clinical sensitivity. Biopsy and dermoscopy by a qualified doctor remain mandatory."
+}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Bad Request (400) | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 5rem; padding-bottom: 5rem; text-align: center;">
+  <div class="container container-narrow">
+    <div class="card" style="padding: 3rem 2rem; max-width: 500px; margin: 0 auto;">
+      <span class="badge badge-warning" style="margin-bottom: 1rem;">Bad Request (400)</span>
+      <h1 class="heading-serif" style="font-size: 2rem; margin-bottom: 0.75rem;">Invalid Request Parameters</h1>
+      <p style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 1.75rem;">
+        The screening server could not process the submitted request due to invalid or malformed data.
+      </p>
+      <a href="{{ url_for('main.index') }}" class="btn btn-primary">Return to Homepage</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

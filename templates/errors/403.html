@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}Access Denied (403) | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 5rem; padding-bottom: 5rem; text-align: center;">
+  <div class="container container-narrow">
+    <div class="card card-pastel-pink" style="padding: 3rem 2rem; max-width: 500px; margin: 0 auto; border: 1px solid var(--color-muted-rose);">
+      <span class="badge badge-danger" style="margin-bottom: 1rem;">Security Access Violation (403)</span>
+      <h1 class="heading-serif" style="font-size: 2.2rem; margin-bottom: 0.75rem; color: #792b37;">Access Denied</h1>
+      <p style="color: #55343a; font-size: 0.95rem; margin-bottom: 1.75rem;">
+        You do not have permission to view or download this screening record. Patient records and uploads are strictly isolated and protected.
+      </p>
+      <a href="{{ url_for('analysis.dashboard') }}" class="btn btn-primary">Return to Your Dashboard</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

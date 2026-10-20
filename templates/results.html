@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block title %}Screening Results | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem; padding-bottom: 4rem;">
+  <div class="container container-narrow">
+    <!-- Top Action Breadcrumb -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <a href="{{ url_for('analysis.dashboard') }}" style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; font-weight: 600;">
+        &larr; Return to Dashboard
+      </a>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('analysis.download_report', record_id=record.id) }}" class="btn btn-primary btn-sm">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download PDF Report
+        </a>
+        <a href="{{ url_for('analysis.upload') }}" class="btn btn-secondary btn-sm">
+          Analyze Another
+        </a>
+      </div>
+    </div>
+
+    <!-- Safety Banner for Demo Mode / Simulation vs Genuine Model -->
+    {% if record.is_demo %}
+      <div class="card card-pastel-pink" style="border: 2px solid var(--color-muted-rose); margin-bottom: 2rem; padding: 1.25rem 1.5rem;">
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <div style="font-size: 1.75rem; color: #792b37;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+          <div>
+            <span class="badge badge-danger" style="margin-bottom: 0.25rem;">DEMO / SAMPLE RECORD &mdash; EDUCATIONAL SIMULATION</span>
+            <p style="font-size: 0.9rem; color: #55343a; margin-top: 0.25rem;">
+              This record is a preloaded HAM10000 educational benchmark case or preview simulation. It does not reflect a live clinical patient exam.
+            </p>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="card card-pastel-sage" style="border: 2px solid var(--color-dark-sage); margin-bottom: 2rem; padding: 1.25rem 1.5rem;">
+        <div style="display: flex; gap: 1rem; align-items: center;">
+          <div style="font-size: 1.75rem; color: var(--color-dark-sage);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div>
+            <span class="badge badge-success" style="margin-bottom: 0.25rem;">GENUINE TENSORFLOW CNN MODEL INFERENCE</span>
+            <p style="font-size: 0.9rem; color: var(--color-dark-brown); margin-top: 0.25rem;">
+              Prediction computed directly by the trained MobileNetV2 Convolutional Neural Network on the HAM10000 7-class dermoscopic dataset.
+            </p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Main Result Card -->
+    <div class="card result-header-card" style="background-color: var(--color-white);">
+      <!-- Image Thumbnail Frame -->
+      <div class="result-image-frame">
+        <img 
+          src="{{ url_for('analysis.serve_upload', filename=record.stored_filename) }}" 
+          alt="Analyzed Skin Lesion"
+          onerror="this.src='https://placehold.co/260x260?text=Lesion+Preview';"
+        >
+      </div>
+
+      <!-- Result Information -->
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <span class="badge {% if 'Malignant' in record.classification or 'Melanoma' in record.classification %}badge-danger{% else %}badge-sage{% endif %}">
+            Preliminary Finding
+          </span>
+          <span style="font-size: 0.8rem; color: var(--color-text-muted);">
+            Report ID: RPT-2026-{{ "%05d"|format(record.id) }}
+          </span>
+        </div>
+
+        <h2 class="heading-serif" style="font-size: 1.85rem; margin-bottom: 0.75rem; color: var(--color-dark-brown);">
+          {{ record.classification }}
+        </h2>
+
+        <!-- Confidence Indicator (if available) -->
+        {% if record.confidence_score is not none %}
+          <div class="confidence-meter-wrap">
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.35rem;">
+              <span style="color: var(--color-dark-brown);">Model Confidence Score</span>
+              <span style="color: var(--color-dark-sage);">{{ "%.1f"|format(record.confidence_score) }}%</span>
+            </div>
+            <div class="confidence-bar-bg">
+              <div 
+                class="confidence-bar-fill {% if record.confidence_score >= 80 %}high{% else %}medium{% endif %}" 
+                style="width: {{ record.confidence_score }}%;"
+              ></div>
+            </div>
+          </div>
+        {% else %}
+          <div style="background-color: var(--color-warm-beige); padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin: 1rem 0; font-size: 0.85rem;">
+            <strong>Confidence Score:</strong> N/A &mdash; Honest Demo Mode (no fabricated percentage).
+          </div>
+        {% endif %}
+
+        <div style="font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.5; margin-top: 0.75rem;">
+          <div><strong>Filename:</strong> {{ record.original_filename }}</div>
+          <div><strong>Timestamp:</strong> {{ record.created_at }}</div>
+          <div><strong>Architecture:</strong> {{ record.model_version }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7-Class Neural Network Probabilities Breakdown -->
+    {% if metadata and metadata.all_class_scores %}
+      <div class="card" style="margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div>
+            <h3 class="heading-serif" style="font-size: 1.35rem; margin-bottom: 0.25rem; color: var(--color-dark-brown);">
+              7-Class Neural Network Probability Distribution
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--color-text-muted);">
+              Softmax output probabilities across all diagnostic categories from the trained MobileNetV2 classifier on the HAM10000 dataset.
+            </p>
+          </div>
+          <span class="badge badge-sage">HAM10000 7-Class Scheme</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          {% for cls in metadata.all_class_scores %}
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 0.88rem; margin-bottom: 0.35rem;">
+                <span style="font-weight: 600; color: {% if cls.is_concerning %}var(--color-danger){% else %}var(--color-dark-brown){% endif %};">
+                  {{ cls.label }} <code style="font-size: 0.8rem; background: var(--color-warm-beige); padding: 0.1rem 0.35rem; border-radius: 4px;">{{ cls.code }}</code>
+                  {% if cls.is_concerning %}
+                    <span class="badge badge-danger" style="font-size: 0.7rem; padding: 0.15rem 0.45rem; margin-left: 0.4rem;">Malignant / Pre-malignant</span>
+                  {% else %}
+                    <span class="badge badge-sage" style="font-size: 0.7rem; padding: 0.15rem 0.45rem; margin-left: 0.4rem;">Benign</span>
+                  {% endif %}
+                </span>
+                <span style="font-weight: 700; color: var(--color-dark-brown); font-size: 0.95rem;">
+                  {{ "%.2f"|format(cls.probability) }}%
+                </span>
+              </div>
+              <div style="background-color: var(--color-warm-beige); height: 12px; border-radius: 6px; overflow: hidden; width: 100%; border: 1px solid var(--color-border);">
+                <div 
+                  style="height: 100%; border-radius: 6px; width: {{ cls.probability }}%; background: {% if cls.is_concerning %}linear-gradient(90deg, #d98282, var(--color-danger)){% else %}linear-gradient(90deg, #9bb09f, var(--color-dark-sage)){% endif %}; transition: width 0.8s ease;"
+                ></div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Narrative & Interpretation Card -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <h3 class="heading-serif" style="font-size: 1.35rem; margin-bottom: 0.75rem; color: var(--color-dark-brown);">
+        Clinical Interpretation & Overview
+      </h3>
+      <p style="font-size: 0.95rem; color: var(--color-dark-brown); line-height: 1.7; margin-bottom: 1.25rem;">
+        {{ record.explanation }}
+      </p>
+
+      {% if metadata %}
+        <div style="background-color: var(--color-warm-beige); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <h4 style="font-size: 0.9rem; color: var(--color-dark-brown); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.03em;">
+            Image Spatial & Visual Metrics
+          </h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; font-size: 0.85rem;">
+            <div><span style="color: var(--color-text-muted);">Resolution:</span> <strong>{{ metadata.width }}&times;{{ metadata.height }} px</strong></div>
+            <div><span style="color: var(--color-text-muted);">Aspect Ratio:</span> <strong>{{ metadata.aspect_ratio }}</strong></div>
+            <div><span style="color: var(--color-text-muted);">Brightness:</span> <strong>{{ metadata.avg_brightness or 'N/A' }}</strong></div>
+            <div><span style="color: var(--color-text-muted);">Format:</span> <strong>{{ metadata.format }}</strong></div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Next Steps Guidance Card -->
+    <div class="card card-pastel-sage" style="margin-bottom: 2rem;">
+      <h3 style="font-size: 1.2rem; margin-bottom: 0.75rem; color: var(--color-dark-sage);">
+        Recommended Next Steps
+      </h3>
+      <ol style="font-size: 0.9rem; color: var(--color-dark-brown); line-height: 1.7; padding-left: 1.25rem;">
+        <li><strong>Download the PDF Screening Report:</strong> Save a copy of your analysis to present to a medical specialist.</li>
+        <li><strong>Schedule a Consultation:</strong> If the lesion is irregular, evolving, bleeding, or marked as suspicious, consult a board-certified dermatologist for a clinical dermoscopy exam.</li>
+        <li><strong>Observe the ABCDE Rule:</strong> Check for asymmetry, irregular borders, color variation, diameter >6mm, and continuous evolution.</li>
+      </ol>
+    </div>
+
+    <!-- Interactive Navigation Actions -->
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2rem;">
+      <a href="{{ url_for('analysis.download_report', record_id=record.id) }}" class="btn btn-primary btn-lg">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        Download Official PDF Report
+      </a>
+      <a href="{{ url_for('analysis.history') }}" class="btn btn-secondary btn-lg">
+        View All History
+      </a>
+      <a href="{{ url_for('analysis.upload') }}" class="btn btn-outline btn-lg">
+        Analyze Another Image
+      </a>
+    </div>
+
+    <!-- Mandatory Clinical Disclaimer -->
+    <div class="disclaimer-box" style="margin-top: 1rem;">
+      <div class="disclaimer-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <div class="disclaimer-content">
+        <h4>Limitation of AI-Assisted Preliminary Screening</h4>
+        <p>
+          This project is an educational AI research prototype. Its predictions are not a medical diagnosis and have not been established as clinically reliable. Consult a qualified dermatologist for assessment of concerning or changing skin lesions.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

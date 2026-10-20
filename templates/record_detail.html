@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Details #{{ record.id }} | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 3rem; padding-bottom: 4rem;">
+  <div class="container container-narrow">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+      <a href="{{ url_for('analysis.history') }}" style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 600;">
+        &larr; Back to History
+      </a>
+      <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('analysis.download_report', record_id=record.id) }}" class="btn btn-primary btn-sm">
+          Download PDF Report
+        </a>
+      </div>
+    </div>
+
+    <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
+      <div style="display: grid; grid-template-columns: 220px 1fr; gap: 2rem; align-items: center;">
+        <div style="width: 220px; height: 220px; border-radius: var(--radius-md); overflow: hidden; background: #000; border: 2px solid var(--color-border);">
+          <img 
+            src="{{ url_for('analysis.serve_upload', filename=record.stored_filename) }}" 
+            alt="Lesion Record" 
+            style="width: 100%; height: 100%; object-fit: cover;"
+          >
+        </div>
+        <div>
+          <span class="badge {% if record.is_demo %}badge-warning{% else %}badge-success{% endif %}" style="margin-bottom: 0.5rem;">
+            {% if record.is_demo %}DEMO / SIMULATION{% else %}GENUINE MODEL PREDICTION{% endif %}
+          </span>
+          <h2 class="heading-serif" style="font-size: 1.75rem; margin-bottom: 0.5rem; color: var(--color-dark-brown);">
+            {{ record.classification }}
+          </h2>
+          <p style="font-size: 0.95rem; color: var(--color-text-muted); margin-bottom: 1rem;">
+            Recorded on {{ record.created_at }} | File: {{ record.original_filename }}
+          </p>
+
+          {% if record.confidence_score is not none %}
+            <div style="font-size: 1rem; font-weight: 700; color: var(--color-dark-sage); margin-bottom: 0.5rem;">
+              Confidence: {{ "%.1f"|format(record.confidence_score) }}%
+            </div>
+          {% else %}
+            <div style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 0.5rem;">
+              Confidence: N/A (Demo mode preview)
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 2rem;">
+      <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--color-dark-brown);">Clinical Summary & Notes</h3>
+      <p style="font-size: 0.95rem; color: var(--color-dark-brown); line-height: 1.7;">
+        {{ record.explanation }}
+      </p>
+
+      {% if metadata %}
+        <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); font-size: 0.85rem; color: var(--color-text-muted);">
+          <strong>Image Technical Properties:</strong> Resolution: {{ metadata.get('width') }}x{{ metadata.get('height') }} px | Contrast metric: {{ metadata.get('contrast_metric') }} | Format: {{ metadata.get('format') }}
+        </div>
+      {% endif %}
+    </div>
+
+    <div style="text-align: center;">
+      <a href="{{ url_for('analysis.download_report', record_id=record.id) }}" class="btn btn-primary btn-lg">
+        Download PDF Screening Report
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}File Too Large (413) | DermaCare AI{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 5rem; padding-bottom: 5rem; text-align: center;">
+  <div class="container container-narrow">
+    <div class="card card-pastel-pink" style="padding: 3rem 2rem; max-width: 500px; margin: 0 auto;">
+      <span class="badge badge-warning" style="margin-bottom: 1rem;">File Size Limit Exceeded (413)</span>
+      <h1 class="heading-serif" style="font-size: 2rem; margin-bottom: 0.75rem;">Upload Exceeds 10 MB</h1>
+      <p style="color: var(--color-text-muted); font-size: 0.95rem; margin-bottom: 1.75rem;">
+        The uploaded image file is larger than the configured 10 MB server ceiling. Please compress or resize the photograph and try again.
+      </p>
+      <a href="{{ url_for('analysis.upload') }}" class="btn btn-primary">Try Another Image</a>
+    </div>
+  </div>
+</section>
+{% endblock %}
