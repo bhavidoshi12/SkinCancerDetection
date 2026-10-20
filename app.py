@@ -65,6 +65,7 @@ def create_app(config_class=Config):
 app = create_app()
 
 if __name__ == '__main__':
-    # Default local development port
+    # Cloud (Render) or local development port
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='127.0.0.1', port=port, debug=True)
+    host = os.environ.get('HOST', '0.0.0.0')
+    app.run(host=host, port=port, debug=False)
