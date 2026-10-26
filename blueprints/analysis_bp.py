@@ -12,10 +12,11 @@ from services.model_service import (
     validate_and_inspect_image, analyze_skin_lesion,
     check_model_availability, get_educational_sample_records
 )
-from services.pdf_service import generate_screening_report_pdf
+from services.pdf_service import generate_screening_report_pdf, save_screening_report_pdf
 from database.db import (
     create_analysis_record, get_user_analysis_records,
-    get_analysis_record_by_id, get_user_analysis_stats, get_db_connection
+    get_analysis_record_by_id, get_user_analysis_stats, get_db_connection,
+    get_patient_medical_profile, upsert_patient_medical_profile, get_user_by_id
 )
 from config import Config
 
@@ -26,9 +27,10 @@ analysis_bp = Blueprint('analysis', __name__, url_prefix='')
 def dashboard():
     user = get_current_user()
     stats = get_user_analysis_stats(user['id'])
-    recent_records = get_user_analysis_records(user['id'], limit=5)
+    recent_records = get_user_analysis_records(user['id'], limit=10)
     model_status = check_model_availability()
     samples = get_educational_sample_records()
+    patient_profile = get_patient_medical_profile(user['id'])
     
     return render_template(
         'dashboard.html',
@@ -36,7 +38,8 @@ def dashboard():
         stats=stats,
         recent_records=recent_records,
         model_status=model_status,
-        samples=samples
+        samples=samples,
+        profile=patient_profile
     )
 
 @analysis_bp.route('/upload')
@@ -66,12 +69,12 @@ def analyze():
         flash(f"Upload rejected: {error_msg}", "danger")
         return redirect(url_for('analysis.upload'))
         
-    # Generate unique stored filename
+    # Generate unique stored filename in dedicated patient_images directory
     ext = file.filename.rsplit('.', 1)[-1].lower()
     unique_filename = f"user_{user['id']}_{uuid.uuid4().hex[:12]}.{ext}"
-    upload_dir = Path(current_app.config.get('UPLOAD_FOLDER', Config.UPLOAD_FOLDER))
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    file_path = upload_dir / unique_filename
+    patient_images_dir = Path(current_app.config.get('PATIENT_IMAGES_FOLDER', Config.PATIENT_IMAGES_FOLDER))
+    patient_images_dir.mkdir(parents=True, exist_ok=True)
+    file_path = patient_images_dir / unique_filename
     
     # Save the verified image
     try:
@@ -81,6 +84,9 @@ def analyze():
         flash("Failed to securely store the uploaded image. Please try again.", "danger")
         return redirect(url_for('analysis.upload'))
         
+    # Capture optional symptoms voluntarily noted by patient
+    symptoms_noted = request.form.get('symptoms', '').strip()
+
     # Perform analysis (Genuine ML or honest transparent demo mode)
     force_demo = request.form.get('force_demo') == '1'
     analysis_result = analyze_skin_lesion(image_obj, metadata, force_demo=force_demo)
@@ -88,7 +94,7 @@ def analyze():
     if analysis_result.get('all_class_scores'):
         metadata['all_class_scores'] = analysis_result['all_class_scores']
     
-    # Persist record in database
+    # Persist record in backend database
     record_id = create_analysis_record(
         user_id=user['id'],
         original_filename=file.filename,
@@ -101,7 +107,8 @@ def analyze():
         explanation=analysis_result['explanation'],
         is_demo=analysis_result['is_demo'],
         model_version=analysis_result['model_version'],
-        lesion_metadata=metadata
+        lesion_metadata=metadata,
+        symptoms_noted=symptoms_noted
     )
     
     flash("Image processed successfully.", "success")
@@ -219,52 +226,120 @@ def record_detail(record_id):
             
     return render_template('record_detail.html', record=record, metadata=metadata, user=user)
 
+@analysis_bp.route('/report/<int:record_id>')
 @analysis_bp.route('/report/<int:record_id>/download')
 @login_required
 def download_report(record_id):
     """
-    Generates and downloads a clinical screening report PDF.
-    Enforces strict user isolation: Users can ONLY download their own reports!
+    Generates, stores, and downloads a clinical screening report PDF.
+    Enforces authorization: Patients can only download their own reports;
+    administrators can download reports according to administrative permissions.
+    """
+    current_u = get_current_user()
+    is_admin = session.get('user_role') == 'admin'
+    
+    if is_admin:
+        record = get_analysis_record_by_id(record_id)
+    else:
+        record = get_analysis_record_by_id(record_id, user_id=current_u['id'])
+        
+    if not record:
+        abort(403)
+        
+    target_user = get_user_by_id(record['user_id']) or current_u
+    
+    try:
+        report_file, rel_path = save_screening_report_pdf(record, target_user)
+        safe_filename = f"Skin_Cancer_Screening_Report_RPT_{record['id']:05d}.pdf"
+        return send_file(
+            str(report_file),
+            as_attachment=True,
+            download_name=safe_filename,
+            mimetype='application/pdf'
+        )
+    except Exception:
+        pdf_buffer = io.BytesIO()
+        generate_screening_report_pdf(record, target_user, pdf_buffer)
+        pdf_buffer.seek(0)
+        safe_filename = f"Skin_Cancer_Screening_Report_RPT_{record['id']:05d}.pdf"
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=safe_filename,
+            mimetype='application/pdf'
+        )
+
+@analysis_bp.route('/patient/medical-profile/update', methods=['POST'])
+@login_required
+def update_patient_medical_profile_view():
+    """
+    Saves patient-provided medical history, skin concerns, and allergies to the backend database.
+    Immediately synchronized with both patient and administrator dashboards.
     """
     user = get_current_user()
-    record = get_analysis_record_by_id(record_id, user_id=user['id'])
     
-    if not record:
-        abort(403)  # Forbidden if record belongs to someone else or does not exist
-        
-    pdf_buffer = io.BytesIO()
-    generate_screening_report_pdf(record, user, pdf_buffer)
-    pdf_buffer.seek(0)
+    medical_history = request.form.get('medical_history', '').strip()
+    skin_concerns = request.form.get('skin_concerns', '').strip()
+    allergies = request.form.get('allergies', '').strip()
+    sun_exposure_level = request.form.get('sun_exposure_level', 'Moderate').strip()
+    fitzpatrick_skin_type = request.form.get('fitzpatrick_skin_type', 'Type II').strip()
+    family_history_skin_cancer = request.form.get('family_history_skin_cancer', 'None').strip()
+    phone = request.form.get('phone', '').strip()
+    emergency_contact = request.form.get('emergency_contact', '').strip()
     
-    safe_filename = f"Skin_Cancer_Screening_Report_RPT_{record['id']:05d}.pdf"
-    return send_file(
-        pdf_buffer,
-        as_attachment=True,
-        download_name=safe_filename,
-        mimetype='application/pdf'
+    upsert_patient_medical_profile(
+        user_id=user['id'],
+        medical_history=medical_history,
+        skin_concerns=skin_concerns,
+        allergies=allergies,
+        sun_exposure_level=sun_exposure_level,
+        fitzpatrick_skin_type=fitzpatrick_skin_type,
+        family_history_skin_cancer=family_history_skin_cancer,
+        phone=phone,
+        emergency_contact=emergency_contact
     )
+    
+    flash("Your personal medical history and skin concerns have been saved to the backend database.", "success")
+    return redirect(url_for('analysis.dashboard'))
 
-@analysis_bp.route('/protected-uploads/<filename>')
+@analysis_bp.route('/protected-uploads/<path:filename>')
+@analysis_bp.route('/uploads/<path:filename>')
 @login_required
 def serve_upload(filename):
     """
-    Secure file endpoint ensuring uploads are not exposed to unauthorized users or search engines.
+    Secure file endpoint ensuring uploads are not exposed to unauthorized users.
+    Patients can only view their own images; admins can view according to permissions.
     """
-    user = get_current_user()
-    # Check if this filename belongs to a record of the authenticated user
+    current_u = get_current_user()
+    is_admin = session.get('user_role') == 'admin'
+    base_name = os.path.basename(filename)
+    
     conn = get_db_connection()
-    row = conn.execute(
-        "SELECT id FROM analysis_records WHERE stored_filename = ? AND user_id = ?",
-        (filename, user['id'])
-    ).fetchone()
+    if is_admin:
+        row = conn.execute(
+            "SELECT id FROM analysis_records WHERE stored_filename = ? OR stored_filename LIKE ?",
+            (base_name, f"%{base_name}")
+        ).fetchone()
+    else:
+        row = conn.execute(
+            "SELECT id FROM analysis_records WHERE (stored_filename = ? OR stored_filename LIKE ?) AND user_id = ?",
+            (base_name, f"%{base_name}", current_u['id'])
+        ).fetchone()
     conn.close()
     
-    if not row:
+    is_sample = base_name.startswith('demo_') or base_name.startswith('sample_') or 'ISIC' in base_name
+    if not row and not is_sample:
         abort(403)
         
-    upload_folder = Path(current_app.config.get('UPLOAD_FOLDER', Config.UPLOAD_FOLDER))
-    file_path = upload_folder / filename
-    if not file_path.exists():
-        abort(404)
-        
-    return send_file(str(file_path))
+    upload_root = Path(current_app.config.get('UPLOAD_FOLDER', Config.UPLOAD_FOLDER))
+    candidates = [
+        Path(current_app.config.get('PATIENT_IMAGES_FOLDER', Config.PATIENT_IMAGES_FOLDER)) / base_name,
+        Path(current_app.config.get('REPORTS_FOLDER', Config.REPORTS_FOLDER)) / base_name,
+        upload_root / base_name,
+        upload_root / filename
+    ]
+    for c in candidates:
+        if c.exists() and c.is_file():
+            return send_file(str(c))
+            
+    abort(404)

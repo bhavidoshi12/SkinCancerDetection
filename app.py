@@ -13,6 +13,8 @@ def create_app(config_class=Config):
     
     # Ensure necessary folders exist
     Config.UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+    Config.PATIENT_IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
+    Config.REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
     Config.DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     Config.MODEL_DIR.mkdir(parents=True, exist_ok=True)
     

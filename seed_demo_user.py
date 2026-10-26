@@ -1,7 +1,7 @@
 """
-Seed Script: Pre-registered Demo Member (Bhavi Doshi)
-Creates the official demo account and realistic preloaded sample history records
-for the college mini-project demonstration.
+Seed Script: Pre-registered Demo Accounts (Bhavi Doshi, Vidisha Ajmera, System Administrator)
+Creates the official demo accounts, realistic preloaded sample history records,
+and synchronized patient medical profiles for the Software Engineering project demonstration.
 """
 
 import os
@@ -11,16 +11,51 @@ import json
 from pathlib import Path
 from werkzeug.security import generate_password_hash
 from config import Config
-from database.db import get_db_connection, init_db
+from database.db import get_db_connection, init_db, upsert_patient_medical_profile, admin_update_patient_profile
+from services.pdf_service import save_screening_report_pdf
 
-DEMO_USER = {
-    'full_name': 'Bhavi Doshi',
-    'email': 'bhavidoshi12@gmail.com',
-    'username': 'bhavi12',
-    'password': 'Bhavi@2026!',
-    'role': 'patient',
-    'avatar': 'avatar_bhavi.png'
-}
+DEMO_USERS = [
+    {
+        'full_name': 'Bhavi Doshi',
+        'email': 'bhavidoshi12@gmail.com',
+        'username': 'bhavi12',
+        'password': 'Bhavi@2026!',
+        'role': 'patient',
+        'avatar': 'avatar_bhavi.png',
+        'medical_profile': {
+            'medical_history': '[DEMO / SAMPLE RECORD] Routine skin screening evaluation. No personal or first-degree family history of melanoma. Routine SPF 50 sunscreen application.',
+            'skin_concerns': '[DEMO / SAMPLE RECORD] Voluntary self-monitoring of common pigmented moles (ABCDE tracking).',
+            'allergies': 'None documented.',
+            'sun_exposure_level': 'Moderate',
+            'fitzpatrick_skin_type': 'Type III',
+            'family_history_skin_cancer': 'None',
+            'phone': '+91 98200 12345',
+            'emergency_contact': 'Dr. K. Doshi (Family Physician): +91 98200 54321',
+            'verification_status': 'Verified by Physician',
+            'admin_notes': 'Documented for academic Software Engineering viva demonstration.'
+        }
+    },
+    {
+        'full_name': 'Vidisha Ajmera',
+        'email': 'vidisha.ajmera@dermacare.ai',
+        'username': 'vidisha_ajmera',
+        'password': 'Vidisha@2026!',
+        'role': 'patient',
+        'avatar': '',
+        'medical_profile': {
+            'medical_history': '[DEMO / SAMPLE RECORD] Voluntary self-report: Family history of melanoma (maternal grandfather), high sun exposure during outdoor sports, Fitzpatrick Skin Type II. Mild seasonal eczema.',
+            'skin_concerns': '[DEMO / SAMPLE RECORD] Noticed a slightly asymmetrical pigmented lesion on upper back; seeks dermatologist screening.',
+            'allergies': 'Penicillin; contact dermatitis to latex.',
+            'sun_exposure_level': 'High (Outdoor Sports)',
+            'fitzpatrick_skin_type': 'Type II',
+            'family_history_skin_cancer': 'Melanoma (Maternal Grandfather)',
+            'phone': '+91 98111 67890',
+            'emergency_contact': 'S. Ajmera (Parent): +91 98111 09876',
+            'verification_status': 'Follow-up Recommended',
+            'admin_notes': 'Clinical follow-up scheduled with attending dermatologist.'
+        }
+    }
+]
 
 DEMO_ADMIN = {
     'full_name': 'System Administrator',
@@ -134,49 +169,30 @@ SAMPLE_RECORDS = [
     }
 ]
 
-def seed_demo_member():
-    print("[1/3] Ensuring database schema is initialized...")
+def seed_demo_members():
+    print("[1/4] Ensuring database schema and tables are initialized...")
     init_db()
     
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # 1. Create or retrieve demo user
-    cursor.execute("SELECT id FROM users WHERE email = ? OR username = ?", (DEMO_USER['email'], DEMO_USER['username']))
-    row = cursor.fetchone()
+    # Ensure dedicated storage directories exist
+    Config.UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+    Config.PATIENT_IMAGES_FOLDER.mkdir(parents=True, exist_ok=True)
+    Config.REPORTS_FOLDER.mkdir(parents=True, exist_ok=True)
     
-    if row:
-        user_id = row['id']
-        print(f"[2/3] Demo member '{DEMO_USER['full_name']}' already exists (User ID: {user_id}).")
-        # Ensure password hash is updated to standard demo password
-        cursor.execute(
-            "UPDATE users SET password_hash = ?, full_name = ?, username = ?, avatar = ? WHERE id = ?",
-            (generate_password_hash(DEMO_USER['password'], method='scrypt'),
-             DEMO_USER['full_name'], DEMO_USER['username'], DEMO_USER['avatar'], user_id)
-        )
-        conn.commit()
-    else:
-        password_hash = generate_password_hash(DEMO_USER['password'], method='scrypt')
-        cursor.execute(
-            "INSERT INTO users (full_name, email, username, password_hash, role, avatar) VALUES (?, ?, ?, ?, ?, ?)",
-            (DEMO_USER['full_name'], DEMO_USER['email'], DEMO_USER['username'], password_hash, DEMO_USER['role'], DEMO_USER['avatar'])
-        )
-        conn.commit()
-        user_id = cursor.lastrowid
-        print(f"[2/3] Created demo member '{DEMO_USER['full_name']}' (User ID: {user_id}).")
-
-    # 1b. Create or retrieve demo admin
+    # 1. Create or retrieve demo admin
     cursor.execute("SELECT id FROM users WHERE email = ? OR username = ?", (DEMO_ADMIN['email'], DEMO_ADMIN['username']))
     admin_row = cursor.fetchone()
     if admin_row:
         admin_id = admin_row['id']
         cursor.execute(
-            "UPDATE users SET password_hash = ?, full_name = ?, username = ?, role = 'admin' WHERE id = ?",
+            "UPDATE users SET password_hash = ?, full_name = ?, username = ?, role = 'admin', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
             (generate_password_hash(DEMO_ADMIN['password'], method='scrypt'),
              DEMO_ADMIN['full_name'], DEMO_ADMIN['username'], admin_id)
         )
         conn.commit()
-        print(f"      Demo admin '{DEMO_ADMIN['full_name']}' verified (User ID: {admin_id}).")
+        print(f"[2/4] Verified demo admin '{DEMO_ADMIN['full_name']}' (User ID: {admin_id}).")
     else:
         cursor.execute(
             "INSERT INTO users (full_name, email, username, password_hash, role, avatar) VALUES (?, ?, ?, ?, ?, ?)",
@@ -186,71 +202,112 @@ def seed_demo_member():
         )
         conn.commit()
         admin_id = cursor.lastrowid
-        print(f"      Created demo admin '{DEMO_ADMIN['full_name']}' (User ID: {admin_id}).")
-        
-    # 2. Seed realistic sample history records
-    upload_dir = Config.UPLOAD_FOLDER
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Check existing records for this user
-    cursor.execute("SELECT COUNT(*) as count FROM analysis_records WHERE user_id = ?", (user_id,))
-    existing_records_count = cursor.fetchone()['count']
-    
+        print(f"[2/4] Created demo admin '{DEMO_ADMIN['full_name']}' (User ID: {admin_id}).")
+
+    # 2. Seed Patient Accounts
     dataset_images = list(Path("dataset/images").glob("*.jpg"))
-    for idx, rec in enumerate(SAMPLE_RECORDS):
-        cursor.execute("SELECT id FROM analysis_records WHERE user_id = ? AND original_filename = ?", (user_id, rec['title']))
-        existing = cursor.fetchone()
+    for user_info in DEMO_USERS:
+        cursor.execute("SELECT id FROM users WHERE email = ? OR username = ?", (user_info['email'], user_info['username']))
+        user_row = cursor.fetchone()
         
-        stored_filename = f"demo_bhavi_sample_{idx+1}.jpg"
-        dest_image_path = upload_dir / stored_filename
-        
-        # Copy real image from dataset/images if available, or generate clean fallback
-        if idx < len(dataset_images) and dataset_images[idx].exists():
-            shutil.copy(dataset_images[idx], dest_image_path)
-        elif not dest_image_path.exists():
-            from PIL import Image, ImageDraw
-            img = Image.new('RGB', (256, 256), color=(235, 215, 195))
-            d = ImageDraw.Draw(img)
-            d.ellipse([70, 70, 185, 185], fill=(120, 75, 55), outline=(70, 40, 30), width=3)
-            img.save(dest_image_path)
-            
-        file_size = dest_image_path.stat().st_size if dest_image_path.exists() else 10240
-        
-        if existing:
-            cursor.execute("""
-                UPDATE analysis_records 
-                SET lesion_metadata = ?, confidence_score = ?, classification = ?, explanation = ?
-                WHERE id = ?
-            """, (json.dumps(rec['metadata']), rec['confidence_score'], rec['classification'], rec['explanation'], existing['id']))
-            print(f"  Updated existing sample record ID {existing['id']}: {rec['classification']}")
+        if user_row:
+            u_id = user_row['id']
+            cursor.execute(
+                "UPDATE users SET password_hash = ?, full_name = ?, username = ?, avatar = ?, role = 'patient', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (generate_password_hash(user_info['password'], method='scrypt'),
+                 user_info['full_name'], user_info['username'], user_info['avatar'], u_id)
+            )
+            conn.commit()
+            print(f"[3/4] Verified patient '{user_info['full_name']}' (User ID: {u_id}).")
         else:
-            cursor.execute("""
-                INSERT INTO analysis_records (
-                    user_id, original_filename, stored_filename, file_path, file_size,
-                    result_status, classification, confidence_score, explanation,
-                    is_demo, model_version, lesion_metadata, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                user_id, rec['title'], stored_filename, str(dest_image_path), file_size,
-                rec['result_status'], rec['classification'], rec['confidence_score'],
-                rec['explanation'], rec['is_demo'], 'HAM10000-Benchmark-Study-Reference',
-                json.dumps(rec['metadata']), rec['created_at']
-            ))
-            print(f"  Added sample history record: {rec['classification']}")
+            cursor.execute(
+                "INSERT INTO users (full_name, email, username, password_hash, role, avatar) VALUES (?, ?, ?, ?, ?, ?)",
+                (user_info['full_name'], user_info['email'], user_info['username'],
+                 generate_password_hash(user_info['password'], method='scrypt'),
+                 user_info['role'], user_info['avatar'])
+            )
+            conn.commit()
+            u_id = cursor.lastrowid
+            print(f"[3/4] Created patient '{user_info['full_name']}' (User ID: {u_id}).")
+            
+        # Synchronize patient medical profile
+        med = user_info['medical_profile']
+        upsert_patient_medical_profile(
+            user_id=u_id,
+            medical_history=med['medical_history'],
+            skin_concerns=med['skin_concerns'],
+            allergies=med['allergies'],
+            sun_exposure_level=med['sun_exposure_level'],
+            fitzpatrick_skin_type=med['fitzpatrick_skin_type'],
+            family_history_skin_cancer=med['family_history_skin_cancer'],
+            phone=med['phone'],
+            emergency_contact=med['emergency_contact']
+        )
+        admin_update_patient_profile(
+            user_id=u_id,
+            admin_id=admin_id,
+            verification_status=med['verification_status'],
+            admin_notes=med['admin_notes']
+        )
         
-    conn.commit()
-    print("Preloaded sample records synchronized successfully.")
-        
+        # Seed realistic benchmark sample records for Bhavi Doshi and Vidisha Ajmera
+        sample_subset = SAMPLE_RECORDS[:3] if user_info['username'] == 'vidisha_ajmera' else SAMPLE_RECORDS
+        for idx, rec in enumerate(sample_subset):
+            cursor.execute("SELECT id FROM analysis_records WHERE user_id = ? AND original_filename = ?", (u_id, rec['title']))
+            existing = cursor.fetchone()
+            
+            stored_filename = f"demo_{user_info['username']}_sample_{idx+1}.jpg"
+            dest_image_path = Config.PATIENT_IMAGES_FOLDER / stored_filename
+            
+            if idx < len(dataset_images) and dataset_images[idx].exists():
+                shutil.copy(dataset_images[idx], dest_image_path)
+            elif not dest_image_path.exists():
+                from PIL import Image, ImageDraw
+                img = Image.new('RGB', (256, 256), color=(235, 215, 195))
+                d = ImageDraw.Draw(img)
+                d.ellipse([70, 70, 185, 185], fill=(120, 75, 55), outline=(70, 40, 30), width=3)
+                img.save(dest_image_path)
+                
+            file_size = dest_image_path.stat().st_size if dest_image_path.exists() else 10240
+            rel_report_path = f"uploads/reports/report_record_{u_id}_{idx+1}.pdf"
+            
+            if existing:
+                cursor.execute("""
+                    UPDATE analysis_records 
+                    SET lesion_metadata = ?, confidence_score = ?, classification = ?, explanation = ?,
+                        file_path = ?, stored_filename = ?, is_demo = 1, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """, (json.dumps(rec['metadata']), rec['confidence_score'], rec['classification'], rec['explanation'],
+                      str(dest_image_path), stored_filename, existing['id']))
+            else:
+                cursor.execute("""
+                    INSERT INTO analysis_records (
+                        user_id, original_filename, stored_filename, file_path, file_size,
+                        result_status, classification, confidence_score, explanation,
+                        is_demo, model_version, lesion_metadata, pdf_report_path, symptoms_noted,
+                        created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                """, (
+                    u_id, rec['title'], stored_filename, str(dest_image_path), file_size,
+                    rec['result_status'], rec['classification'], rec['confidence_score'],
+                    rec['explanation'], rec['is_demo'], 'HAM10000-Benchmark-Study-Reference',
+                    json.dumps(rec['metadata']), rel_report_path, med['skin_concerns'], rec['created_at']
+                ))
+                
+        conn.commit()
+
     conn.close()
+    print("[4/4] Preloaded clinical records and medical profiles synchronized successfully.")
     print("\n" + "="*70)
-    print(" DEMO ACCOUNTS CREATED & READY FOR PRESENTATION")
+    print(" DEMO ACCOUNTS READY & SYNCHRONIZED WITH BACKEND DATABASE")
     print("="*70)
-    print(f" Demo Member:  {DEMO_USER['full_name']}")
-    print(f" Email:        {DEMO_USER['email']}")
-    print(f" Username:     {DEMO_USER['username']}")
-    print(f" Password:     {DEMO_USER['password']}")
-    print(f" Role:         {DEMO_USER['role']}")
-    print("-" * 70)
+    for u in DEMO_USERS:
+        print(f" Patient:      {u['full_name']}")
+        print(f" Email:        {u['email']}")
+        print(f" Username:     {u['username']}")
+        print(f" Password:     {u['password']}")
+        print(f" Role:         {u['role']}")
+        print("-" * 70)
     print(f" Administrator:{DEMO_ADMIN['full_name']}")
     print(f" Email:        {DEMO_ADMIN['email']}")
     print(f" Username:     {DEMO_ADMIN['username']}")
@@ -259,4 +316,4 @@ def seed_demo_member():
     print("="*70)
 
 if __name__ == '__main__':
-    seed_demo_member()
+    seed_demo_members()

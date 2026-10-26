@@ -42,6 +42,32 @@ def init_db():
         cursor.execute("ALTER TABLE users ADD COLUMN username TEXT")
     if 'avatar' not in existing_user_cols:
         cursor.execute("ALTER TABLE users ADD COLUMN avatar TEXT")
+    if 'phone' not in existing_user_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''")
+    if 'updated_at' not in existing_user_cols:
+        cursor.execute("ALTER TABLE users ADD COLUMN updated_at TIMESTAMP")
+        cursor.execute("UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL")
+
+    # Patient Medical Profiles Table (Persistent medical history & clinical concerns)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS patient_medical_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE NOT NULL,
+            medical_history TEXT DEFAULT '',
+            skin_concerns TEXT DEFAULT '',
+            allergies TEXT DEFAULT '',
+            sun_exposure_level TEXT DEFAULT 'Moderate',
+            fitzpatrick_skin_type TEXT DEFAULT 'Type II',
+            family_history_skin_cancer TEXT DEFAULT 'None',
+            phone TEXT DEFAULT '',
+            emergency_contact TEXT DEFAULT '',
+            admin_notes TEXT DEFAULT '',
+            verification_status TEXT DEFAULT 'Unverified',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    """)
 
     # Analysis Records Table
     cursor.execute("""
@@ -59,8 +85,36 @@ def init_db():
             is_demo INTEGER DEFAULT 0,
             model_version TEXT DEFAULT 'CNN-HAM10000-v1',
             lesion_metadata TEXT,
+            pdf_report_path TEXT,
+            symptoms_noted TEXT DEFAULT '',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    """)
+
+    # Dynamic migration for existing analysis_records table
+    cursor.execute("PRAGMA table_info(analysis_records)")
+    existing_record_cols = [row[1] for row in cursor.fetchall()]
+    if 'pdf_report_path' not in existing_record_cols:
+        cursor.execute("ALTER TABLE analysis_records ADD COLUMN pdf_report_path TEXT")
+    if 'symptoms_noted' not in existing_record_cols:
+        cursor.execute("ALTER TABLE analysis_records ADD COLUMN symptoms_noted TEXT DEFAULT ''")
+    if 'updated_at' not in existing_record_cols:
+        cursor.execute("ALTER TABLE analysis_records ADD COLUMN updated_at TIMESTAMP")
+        cursor.execute("UPDATE analysis_records SET updated_at = CURRENT_TIMESTAMP WHERE updated_at IS NULL")
+
+    # Audit Logs Table for Sensitive Medical Record and Administrative Changes
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            record_type TEXT NOT NULL,
+            record_id INTEGER NOT NULL,
+            action TEXT NOT NULL,
+            changed_by_user_id INTEGER NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            details TEXT NOT NULL,
+            FOREIGN KEY (changed_by_user_id) REFERENCES users (id)
         )
     """)
 
@@ -191,14 +245,15 @@ def get_user_by_id(user_id):
     conn.close()
     return user
 
-def update_user_profile(user_id, full_name, email, username=None, avatar=None):
+def update_user_profile(user_id, full_name, email, username=None, avatar=None, phone=None):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         UPDATE users
-        SET full_name = ?, email = ?, username = ?, avatar = COALESCE(?, avatar)
+        SET full_name = ?, email = ?, username = ?, avatar = COALESCE(?, avatar),
+            phone = COALESCE(?, phone), updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-    """, (full_name.strip(), email.strip().lower(), username.strip().lower() if username else None, avatar, user_id))
+    """, (full_name.strip(), email.strip().lower(), username.strip().lower() if username else None, avatar, phone, user_id))
     conn.commit()
     conn.close()
     return True
@@ -206,7 +261,8 @@ def update_user_profile(user_id, full_name, email, username=None, avatar=None):
 # Analysis record helpers
 def create_analysis_record(user_id, original_filename, stored_filename, file_path, file_size,
                            result_status, classification, confidence_score, explanation,
-                           is_demo=0, model_version='CNN-HAM10000-v1', lesion_metadata=None):
+                           is_demo=0, model_version='CNN-HAM10000-v1', lesion_metadata=None,
+                           pdf_report_path=None, symptoms_noted=''):
     conn = get_db_connection()
     cursor = conn.cursor()
     metadata_json = json.dumps(lesion_metadata) if lesion_metadata else '{}'
@@ -214,17 +270,30 @@ def create_analysis_record(user_id, original_filename, stored_filename, file_pat
         INSERT INTO analysis_records (
             user_id, original_filename, stored_filename, file_path, file_size,
             result_status, classification, confidence_score, explanation,
-            is_demo, model_version, lesion_metadata
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            is_demo, model_version, lesion_metadata, pdf_report_path, symptoms_noted,
+            created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     """, (
         user_id, original_filename, stored_filename, str(file_path), file_size,
         result_status, classification, confidence_score, explanation,
-        is_demo, model_version, metadata_json
+        is_demo, model_version, metadata_json, pdf_report_path, symptoms_noted
     ))
     conn.commit()
     record_id = cursor.lastrowid
     conn.close()
     return record_id
+
+def update_analysis_record_pdf_path(record_id, pdf_path):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE analysis_records
+        SET pdf_report_path = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (str(pdf_path), record_id))
+    conn.commit()
+    conn.close()
+    return True
 
 def get_user_analysis_records(user_id, limit=None, status_filter=None, search_query=None):
     conn = get_db_connection()
@@ -352,3 +421,224 @@ def reset_test_cases():
     """)
     conn.commit()
     conn.close()
+
+# Patient Medical Profiles & Audit Trail Helpers
+def get_patient_medical_profile(user_id):
+    conn = get_db_connection()
+    profile = conn.execute(
+        "SELECT * FROM patient_medical_profiles WHERE user_id = ?",
+        (user_id,)
+    ).fetchone()
+    if not profile:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR IGNORE INTO patient_medical_profiles (user_id) VALUES (?)",
+            (user_id,)
+        )
+        conn.commit()
+        profile = conn.execute(
+            "SELECT * FROM patient_medical_profiles WHERE user_id = ?",
+            (user_id,)
+        ).fetchone()
+    conn.close()
+    return profile
+
+def upsert_patient_medical_profile(user_id, medical_history='', skin_concerns='', allergies='',
+                                   sun_exposure_level='Moderate', fitzpatrick_skin_type='Type II',
+                                   family_history_skin_cancer='None', phone='', emergency_contact=''):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    existing = cursor.execute("SELECT id FROM patient_medical_profiles WHERE user_id = ?", (user_id,)).fetchone()
+    if existing:
+        cursor.execute("""
+            UPDATE patient_medical_profiles
+            SET medical_history = ?, skin_concerns = ?, allergies = ?,
+                sun_exposure_level = ?, fitzpatrick_skin_type = ?,
+                family_history_skin_cancer = ?, phone = ?, emergency_contact = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ?
+        """, (medical_history.strip(), skin_concerns.strip(), allergies.strip(),
+              sun_exposure_level.strip(), fitzpatrick_skin_type.strip(),
+              family_history_skin_cancer.strip(), phone.strip(), emergency_contact.strip(), user_id))
+    else:
+        cursor.execute("""
+            INSERT INTO patient_medical_profiles (
+                user_id, medical_history, skin_concerns, allergies,
+                sun_exposure_level, fitzpatrick_skin_type,
+                family_history_skin_cancer, phone, emergency_contact,
+                updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        """, (user_id, medical_history.strip(), skin_concerns.strip(), allergies.strip(),
+              sun_exposure_level.strip(), fitzpatrick_skin_type.strip(),
+              family_history_skin_cancer.strip(), phone.strip(), emergency_contact.strip()))
+    
+    cursor.execute("UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+
+    log_audit_event(
+        record_type='patient_profile',
+        record_id=user_id,
+        action='patient_profile_update',
+        changed_by_user_id=user_id,
+        details="Patient updated voluntary medical history, allergies, and skin concerns."
+    )
+    return True
+
+def admin_update_patient_profile(user_id, admin_id, verification_status=None, admin_notes=None,
+                                 phone=None, emergency_contact=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR IGNORE INTO patient_medical_profiles (user_id) VALUES (?)", (user_id,))
+    
+    updates = []
+    params = []
+    if verification_status is not None:
+        updates.append("verification_status = ?")
+        params.append(verification_status.strip())
+    if admin_notes is not None:
+        updates.append("admin_notes = ?")
+        params.append(admin_notes.strip())
+    if phone is not None:
+        updates.append("phone = ?")
+        params.append(phone.strip())
+    if emergency_contact is not None:
+        updates.append("emergency_contact = ?")
+        params.append(emergency_contact.strip())
+        
+    updates.append("updated_at = CURRENT_TIMESTAMP")
+    params.append(user_id)
+    
+    query = f"UPDATE patient_medical_profiles SET {', '.join(updates)} WHERE user_id = ?"
+    cursor.execute(query, params)
+    cursor.execute("UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    
+    changed_fields = [k.split(' =')[0] for k in updates if 'updated_at' not in k]
+    log_audit_event(
+        record_type='patient_profile',
+        record_id=user_id,
+        action='admin_profile_update',
+        changed_by_user_id=admin_id,
+        details=f"Authorized admin updated fields: {', '.join(changed_fields)}."
+    )
+    return True
+
+def log_audit_event(record_type, record_id, action, changed_by_user_id, details):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO audit_logs (record_type, record_id, action, changed_by_user_id, details)
+            VALUES (?, ?, ?, ?, ?)
+        """, (str(record_type), int(record_id), str(action), int(changed_by_user_id), str(details)))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        return False
+
+def get_audit_logs_for_record(record_type, record_id):
+    conn = get_db_connection()
+    logs = conn.execute("""
+        SELECT a.*, u.full_name as author_name, u.email as author_email, u.role as author_role
+        FROM audit_logs a
+        LEFT JOIN users u ON a.changed_by_user_id = u.id
+        WHERE a.record_type = ? AND a.record_id = ?
+        ORDER BY a.timestamp DESC
+    """, (str(record_type), int(record_id))).fetchall()
+    conn.close()
+    return logs
+
+def get_all_audit_logs(limit=50):
+    conn = get_db_connection()
+    logs = conn.execute("""
+        SELECT a.*, u.full_name as author_name, u.email as author_email, u.role as author_role
+        FROM audit_logs a
+        LEFT JOIN users u ON a.changed_by_user_id = u.id
+        ORDER BY a.timestamp DESC
+        LIMIT ?
+    """, (int(limit),)).fetchall()
+    conn.close()
+    return logs
+
+def search_patients(search_query=None):
+    conn = get_db_connection()
+    query = """
+        SELECT u.id, u.full_name, u.email, u.username, u.role, u.created_at, u.updated_at,
+               p.verification_status, p.skin_concerns, p.medical_history, p.allergies,
+               p.sun_exposure_level, p.fitzpatrick_skin_type, p.family_history_skin_cancer,
+               p.phone as patient_phone, p.emergency_contact, p.updated_at as profile_updated_at,
+               p.admin_notes,
+               COUNT(a.id) as analysis_count
+        FROM users u
+        LEFT JOIN patient_medical_profiles p ON u.id = p.user_id
+        LEFT JOIN analysis_records a ON u.id = a.user_id
+    """
+    params = []
+    if search_query and search_query.strip():
+        term = f"%{search_query.strip().lower()}%"
+        if search_query.strip().isdigit():
+            query += " WHERE (u.id = ? OR LOWER(u.full_name) LIKE ? OR LOWER(u.email) LIKE ? OR LOWER(u.username) LIKE ?)"
+            params.extend([int(search_query.strip()), term, term, term])
+        else:
+            query += " WHERE (LOWER(u.full_name) LIKE ? OR LOWER(u.email) LIKE ? OR LOWER(u.username) LIKE ?)"
+            params.extend([term, term, term])
+            
+    query += " GROUP BY u.id ORDER BY u.id ASC"
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return rows
+
+def get_patient_full_details(user_id):
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not user:
+        conn.close()
+        return None
+        
+    profile = conn.execute("SELECT * FROM patient_medical_profiles WHERE user_id = ?", (user_id,)).fetchone()
+    if not profile:
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR IGNORE INTO patient_medical_profiles (user_id) VALUES (?)", (user_id,))
+        conn.commit()
+        profile = conn.execute("SELECT * FROM patient_medical_profiles WHERE user_id = ?", (user_id,)).fetchone()
+        
+    records = conn.execute(
+        "SELECT * FROM analysis_records WHERE user_id = ? ORDER BY created_at DESC",
+        (user_id,)
+    ).fetchall()
+    
+    total = conn.execute("SELECT COUNT(*) as count FROM analysis_records WHERE user_id = ?", (user_id,)).fetchone()['count']
+    genuine = conn.execute("SELECT COUNT(*) as count FROM analysis_records WHERE user_id = ? AND is_demo = 0", (user_id,)).fetchone()['count']
+    demo_count = conn.execute("SELECT COUNT(*) as count FROM analysis_records WHERE user_id = ? AND is_demo = 1", (user_id,)).fetchone()['count']
+    benign = conn.execute("SELECT COUNT(*) as count FROM analysis_records WHERE user_id = ? AND classification LIKE '%Benign%'", (user_id,)).fetchone()['count']
+    attention = conn.execute("SELECT COUNT(*) as count FROM analysis_records WHERE user_id = ? AND (classification LIKE '%Malignant%' OR classification LIKE '%Melanoma%')", (user_id,)).fetchone()['count']
+    
+    stats = {
+        'total': total,
+        'genuine': genuine,
+        'demo_count': demo_count,
+        'benign': benign,
+        'attention': attention
+    }
+    
+    logs = conn.execute("""
+        SELECT a.*, u.full_name as author_name, u.role as author_role
+        FROM audit_logs a
+        LEFT JOIN users u ON a.changed_by_user_id = u.id
+        WHERE (a.record_type = 'patient_profile' AND a.record_id = ?)
+           OR (a.changed_by_user_id = ?)
+        ORDER BY a.timestamp DESC
+        LIMIT 25
+    """, (user_id, user_id)).fetchall()
+    
+    conn.close()
+    return {
+        'user': user,
+        'profile': profile,
+        'records': records,
+        'stats': stats,
+        'audit_logs': logs
+    }

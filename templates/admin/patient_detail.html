@@ -1,0 +1,363 @@
+{% extends 'base.html' %}
+
+{% block title %}Patient Medical Record #{{ patient.id }} &mdash; {{ patient.full_name }} | Admin Portal{% endblock %}
+
+{% block content %}
+<section class="section" style="padding-top: 2.5rem; padding-bottom: 5rem;">
+  <div class="container">
+    
+    <!-- Navigation Breadcrumb -->
+    <div style="margin-bottom: 1.5rem;">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        Back to Admin Command Center
+      </a>
+    </div>
+
+    <!-- Patient Header Card -->
+    <div class="card card-clean" style="margin-bottom: 2rem; padding: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1.5rem;">
+        <div style="display: flex; gap: 1.25rem; align-items: center;">
+          <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--color-warm-beige); border: 2px solid var(--color-dark-sage); display: flex; align-items: center; justify-content: center; font-size: 1.75rem; font-weight: 700; color: var(--color-dark-brown);">
+            {{ patient.full_name[:1] }}
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.3rem;">
+              <h1 class="heading-serif" style="font-size: 1.85rem; margin: 0; color: var(--color-dark-brown);">
+                {{ patient.full_name }}
+              </h1>
+              <span class="badge badge-sage">Patient ID: #{{ patient.id }}</span>
+              {% if profile.verification_status == 'Verified by Physician' %}
+                <span class="badge badge-success">Verified by Physician</span>
+              {% elif profile.verification_status == 'Pending Review' %}
+                <span class="badge badge-warning">Pending Review</span>
+              {% elif profile.verification_status == 'Follow-up Recommended' %}
+                <span class="badge badge-danger">Follow-up Recommended</span>
+              {% else %}
+                <span class="badge badge-secondary" style="background: var(--color-warm-beige); color: var(--color-dark-brown);">Unverified</span>
+              {% endif %}
+            </div>
+            <p style="margin: 0; font-size: 0.9rem; color: var(--color-text-muted);">
+              <strong>Email:</strong> <span style="font-family: monospace;">{{ patient.email }}</span>
+              {% if patient.username %}&bull; <strong>Username:</strong> @{{ patient.username }}{% endif %}
+              {% if patient.phone or profile.phone %}&bull; <strong>Phone:</strong> {{ patient.phone or profile.phone }}{% endif %}
+            </p>
+            <div style="margin-top: 0.35rem; font-size: 0.8rem; color: var(--color-text-muted);">
+              <span>Registered on: {{ patient.created_at[:10] if patient.created_at else 'Prior' }}</span>
+              {% if profile.updated_at %}
+                <span style="margin-left: 0.75rem; color: var(--color-dark-sage);">
+                  &bull; Profile Last Synchronized: {{ profile.updated_at[:19] }}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Mini Badges -->
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <div style="background: var(--color-cream); padding: 0.6rem 1rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-dark-brown);">{{ stats.total_scans }}</div>
+            <div style="font-size: 0.75rem; color: var(--color-text-muted); text-transform: uppercase;">Total Lesions</div>
+          </div>
+          <div style="background: var(--color-pastel-sage); padding: 0.6rem 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(101,124,104,0.3); text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 700; color: #2e5934;">{{ stats.genuine_scans }}</div>
+            <div style="font-size: 0.75rem; color: #2e5934; text-transform: uppercase;">AI Inferences</div>
+          </div>
+          <div style="background: #fdf2f4; padding: 0.6rem 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(181,84,98,0.3); text-align: center;">
+            <div style="font-size: 1.25rem; font-weight: 700; color: var(--color-danger);">{{ stats.high_risk_scans }}</div>
+            <div style="font-size: 0.75rem; color: var(--color-danger); text-transform: uppercase;">Concerning</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two-Column Layout: Left (Medical Info & Admin Updates), Right (Lesion Scans) -->
+    <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; align-items: flex-start; margin-bottom: 2.5rem;">
+      
+      <!-- Left Column: Patient Medical Profile & Authorized Admin Actions -->
+      <div style="display: flex; flex-direction: column; gap: 1.75rem;">
+        
+        <!-- Patient Self-Reported Information Card -->
+        <div class="card card-clean" style="padding: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+            <h3 class="heading-serif" style="font-size: 1.25rem; margin: 0; color: var(--color-dark-brown);">
+              Self-Reported Health Profile
+            </h3>
+            <span class="badge badge-sage">Patient Inputs</span>
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--color-dark-sage); margin-bottom: 0.35rem; letter-spacing: 0.5px;">
+              Current Skin Symptoms & Concerns
+            </h4>
+            <div style="background: var(--color-cream); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: 0.9rem; line-height: 1.5; color: var(--color-dark-brown);">
+              {{ profile.skin_concerns or 'No active skin concerns or symptoms currently recorded by patient.' }}
+            </div>
+          </div>
+
+          <div style="margin-bottom: 1.25rem;">
+            <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--color-dark-sage); margin-bottom: 0.35rem; letter-spacing: 0.5px;">
+              Voluntary Medical History
+            </h4>
+            <div style="background: var(--color-cream); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: 0.9rem; line-height: 1.5; color: var(--color-dark-brown);">
+              {{ profile.medical_history or 'No medical history documented.' }}
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+            <div>
+              <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--color-dark-sage); margin-bottom: 0.35rem; letter-spacing: 0.5px;">
+                Allergies
+              </h4>
+              <div style="background: var(--color-cream); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: 0.85rem;">
+                {{ profile.allergies or 'No known drug allergies' }}
+              </div>
+            </div>
+
+            <div>
+              <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--color-dark-sage); margin-bottom: 0.35rem; letter-spacing: 0.5px;">
+                Sun Exposure
+              </h4>
+              <div style="background: var(--color-cream); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: 0.85rem;">
+                {{ profile.sun_exposure_level or 'Moderate' }}
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+              <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--color-dark-sage); margin-bottom: 0.35rem; letter-spacing: 0.5px;">
+                Fitzpatrick Phototype
+              </h4>
+              <div style="background: var(--color-cream); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: 0.85rem;">
+                {{ profile.fitzpatrick_skin_type or 'Type II' }}
+              </div>
+            </div>
+
+            <div>
+              <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--color-dark-sage); margin-bottom: 0.35rem; letter-spacing: 0.5px;">
+                Family Skin Cancer
+              </h4>
+              <div style="background: var(--color-cream); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: 0.85rem;">
+                {{ profile.family_history_skin_cancer or 'None' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Authorized Admin Updates Form Card -->
+        <div class="card card-clean" style="padding: 1.75rem; border-top: 4px solid var(--color-dark-sage);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+            <h3 class="heading-serif" style="font-size: 1.25rem; margin: 0; color: var(--color-dark-brown);">
+              Authorized Clinical Updates
+            </h3>
+            <span class="badge badge-danger">Admin Authorization</span>
+          </div>
+
+          <form method="POST" action="{{ url_for('admin.patient_detail', user_id=patient.id) }}">
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="verification_status" style="font-weight: 600;">
+                Clinical Verification Status
+              </label>
+              <select id="verification_status" name="verification_status" class="form-control" style="background: var(--color-cream);">
+                <option value="Unverified" {% if profile.verification_status == 'Unverified' %}selected{% endif %}>Unverified</option>
+                <option value="Pending Review" {% if profile.verification_status == 'Pending Review' %}selected{% endif %}>Pending Review</option>
+                <option value="Verified by Physician" {% if profile.verification_status == 'Verified by Physician' %}selected{% endif %}>Verified by Physician</option>
+                <option value="Follow-up Recommended" {% if profile.verification_status == 'Follow-up Recommended' %}selected{% endif %}>Follow-up Recommended</option>
+              </select>
+              <small style="color: var(--color-text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                This status is immediately synchronized to the patient's dashboard.
+              </small>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="admin_notes" style="font-weight: 600;">
+                Clinical & Administrative Notes
+              </label>
+              <textarea id="admin_notes" name="admin_notes" class="form-control" rows="3" placeholder="Enter clinical observations, follow-up recommendations, or physician notes..." style="background: var(--color-cream);">{{ profile.admin_notes or '' }}</textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="phone" style="font-weight: 600;">Contact Phone</label>
+                <input type="text" id="phone" name="phone" class="form-control" value="{{ patient.phone or profile.phone or '' }}" placeholder="+1-555-..." style="background: var(--color-cream);">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label class="form-label" for="emergency_contact" style="font-weight: 600;">Emergency Contact</label>
+                <input type="text" id="emergency_contact" name="emergency_contact" class="form-control" value="{{ profile.emergency_contact or '' }}" placeholder="Name / Phone" style="background: var(--color-cream);">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+              Save & Synchronize Authorized Updates
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Uploaded Lesion Imagery & Prediction History -->
+      <div>
+        <div class="card card-clean" style="padding: 1.75rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+            <div>
+              <h3 class="heading-serif" style="font-size: 1.25rem; margin-bottom: 0.2rem; color: var(--color-dark-brown);">
+                Lesion Scans & Diagnostic History
+              </h3>
+              <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 0;">
+                Images stored persistently in <code>uploads/patient_images/</code>
+              </p>
+            </div>
+            <span class="badge badge-sage">{{ records|length }} Records</span>
+          </div>
+
+          {% if records %}
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+              {% for rec in records %}
+                <div style="background: var(--color-cream); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 1.25rem; display: flex; gap: 1.25rem; align-items: flex-start;">
+                  
+                  <!-- Lesion Thumbnail -->
+                  <div style="width: 80px; height: 80px; border-radius: var(--radius-sm); overflow: hidden; background: #000; border: 1px solid var(--color-border); flex-shrink: 0;">
+                    <img 
+                      src="{{ url_for('analysis.serve_upload', filename=rec.stored_filename) }}" 
+                      alt="Lesion Photo" 
+                      style="width: 100%; height: 100%; object-fit: cover;"
+                      onerror="this.src='https://placehold.co/80x80?text=Lesion';"
+                    >
+                  </div>
+
+                  <!-- Details -->
+                  <div style="flex: 1;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap;">
+                      <div>
+                        <strong style="font-size: 1rem; color: {% if 'Melanoma' in rec.classification or 'Malignant' in rec.classification %}var(--color-danger){% else %}var(--color-dark-sage){% endif %};">
+                          {{ rec.classification }}
+                        </strong>
+                        <div style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 0.15rem;">
+                          File: <code>{{ rec.original_filename }}</code> &bull; Scan ID #{{ rec.id }}
+                        </div>
+                      </div>
+
+                      <div>
+                        {% if rec.confidence_score is not none %}
+                          <span class="badge {% if rec.confidence_score >= 80 %}badge-sage{% else %}badge-warning{% endif %}">
+                            {{ "%.1f"|format(rec.confidence_score) }}% Confidence
+                          </span>
+                        {% else %}
+                          <span class="badge badge-secondary" style="background: var(--color-warm-beige); color: var(--color-dark-brown);">Demo Score</span>
+                        {% endif %}
+
+                        {% if rec.is_demo %}
+                          <span class="badge badge-warning" style="margin-left: 0.25rem;">Demo / Sample</span>
+                        {% else %}
+                          <span class="badge badge-success" style="margin-left: 0.25rem;">Actual DL Inference</span>
+                        {% endif %}
+                      </div>
+                    </div>
+
+                    {% if rec.symptoms_noted %}
+                      <div style="margin-top: 0.5rem; font-size: 0.82rem; background: var(--color-warm-beige); padding: 0.4rem 0.65rem; border-radius: 4px; color: var(--color-dark-brown);">
+                        <strong>Patient Symptoms:</strong> {{ rec.symptoms_noted }}
+                      </div>
+                    {% endif %}
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; font-size: 0.78rem; color: var(--color-text-muted); border-top: 1px dashed var(--color-border); padding-top: 0.5rem;">
+                      <div>
+                        <span>Analyzed: {{ rec.created_at[:16] }}</span>
+                        {% if rec.updated_at and rec.updated_at[:16] != rec.created_at[:16] %}
+                          <span style="margin-left: 0.5rem; color: var(--color-dark-sage);">&bull; Updated: {{ rec.updated_at[:16] }}</span>
+                        {% endif %}
+                      </div>
+
+                      <div style="display: flex; gap: 0.5rem;">
+                        <a href="{{ url_for('analysis.view_result', record_id=rec.id) }}" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
+                          Inspect Scan
+                        </a>
+                        <a href="{{ url_for('analysis.download_report', record_id=rec.id) }}" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;" title="Download PDF Report">
+                          PDF Report
+                        </a>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div style="text-align: center; padding: 3rem 1.5rem; color: var(--color-text-muted);">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-bottom: 0.75rem; opacity: 0.5;">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+              <p style="margin: 0; font-size: 0.95rem;">No skin lesion images uploaded yet by this patient.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Patient-Specific Audit Trail -->
+    <div class="card card-clean" style="padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--color-border); padding-bottom: 0.75rem;">
+        <div>
+          <h3 class="heading-serif" style="font-size: 1.25rem; margin-bottom: 0.2rem; color: var(--color-dark-brown);">
+            Audit History for Patient Record #{{ patient.id }}
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 0;">
+            Traceability of administrative modifications and synchronizations
+          </p>
+        </div>
+        <span class="badge badge-sage">{{ audit_logs|length }} Events Logged</span>
+      </div>
+
+      {% if audit_logs %}
+        <div class="table-responsive">
+          <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+            <thead>
+              <tr style="text-align: left; background: var(--color-warm-beige); border-bottom: 2px solid var(--color-border);">
+                <th style="padding: 0.6rem 0.85rem;">Timestamp</th>
+                <th style="padding: 0.6rem 0.85rem;">Action</th>
+                <th style="padding: 0.6rem 0.85rem;">Performed By</th>
+                <th style="padding: 0.6rem 0.85rem;">Audit Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in audit_logs %}
+                <tr style="border-bottom: 1px solid var(--color-border);">
+                  <td style="padding: 0.6rem 0.85rem; font-family: monospace; color: var(--color-text-muted);">
+                    {{ log.timestamp[:19] }}
+                  </td>
+                  <td style="padding: 0.6rem 0.85rem;">
+                    <span class="badge badge-sage" style="font-size: 0.72rem;">{{ log.action }}</span>
+                  </td>
+                  <td style="padding: 0.6rem 0.85rem;">
+                    {% if log.admin_name %}
+                      <strong>{{ log.admin_name }}</strong>
+                    {% else %}
+                      Admin #{{ log.changed_by_user_id }}
+                    {% endif %}
+                  </td>
+                  <td style="padding: 0.6rem 0.85rem; color: var(--color-dark-brown);">
+                    {{ log.details or 'Record updated.' }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="color: var(--color-text-muted); text-align: center; padding: 1.5rem 0; margin: 0;">
+          No administrative modifications have been recorded for this patient yet.
+        </p>
+      {% endif %}
+    </div>
+
+  </div>
+</section>
+{% endblock %}

@@ -159,36 +159,73 @@ http://127.0.0.1:5000
 
 ---
 
-## 6. Pre-Registered Presentation Accounts
+## 6. Pre-Registered Presentation & Demonstration Accounts
 
-For academic viva, lab demonstrations, and faculty evaluation, two official pre-registered accounts are configured:
+For academic viva, lab demonstrations, faculty evaluation, and testing synchronization between patient and administrative portals, three official pre-registered accounts are configured and seeded into SQLite:
 
-### A. Demo Member Account (Patient View)
+### A. Patient Account 1: Bhavi Doshi
 | Property | Details |
 | :--- | :--- |
 | **Full Name** | `Bhavi Doshi` |
 | **Email Address** | `bhavidoshi12@gmail.com` |
-| **Username** | `bhavi12` *(allows login via email or username)* |
+| **Username** | `bhavi12` *(login supported via email or username)* |
 | **Password** | `Bhavi@2026!` |
-| **Role** | Patient / Member |
-| **Preloaded Scans** | 4 realistic HAM10000 benchmark cases tagged with `"Demo / Sample Record"` |
-| **Profile Page** | Accessible at `/profile` (view credentials, stats & edit profile) |
+| **Role** | `patient` |
+| **Medical Profile** | Fitzpatrick Type II, moderate sun exposure, self-reported mole concerns |
+| **Dashboard** | View & update medical history, skin concerns, upload lesion scans, view PDF reports |
 
-### B. System Administrator Account (Admin Portal)
+### B. Patient Account 2: Vidisha Ajmera
+| Property | Details |
+| :--- | :--- |
+| **Full Name** | `Vidisha Ajmera` |
+| **Email Address** | `vidisha.ajmera@dermacare.ai` |
+| **Username** | `vidisha_ajmera` |
+| **Password** | `Vidisha@2026!` |
+| **Role** | `patient` |
+| **Medical Profile** | Preloaded benchmark HAM10000 records transparently labelled as demo cases |
+| **Dashboard** | Verified by Physician status, synchronized clinical admin notes |
+
+### C. System Administrator Account (Command Center)
 | Property | Details |
 | :--- | :--- |
 | **Full Name** | `System Administrator` |
 | **Email Address** | `admin@dermacare.ai` |
 | **Username** | `admin` |
 | **Password** | `Admin@2026!Demo` |
-| **Role** | Administrator |
-| **Admin Portal** | Accessible at `/admin` (guarded by `@admin_required` RBAC) |
-| **Capabilities** | Model telemetry, storage analytics, read-only user roster, global scan logs |
+| **Role** | `admin` |
+| **Admin Portal** | Accessible at `/admin` (guarded by `@admin_required` server authorization) |
+| **Capabilities** | Search patients by name/email/ID, view full patient details (`/admin/patient/<id>`), update verification status, write clinical notes, inspect uploaded lesions & PDF reports, view security audit trail, and export sanitized CSVs |
 
-To re-seed or verify these accounts at any time:
+To re-seed or verify these demo accounts idempotently at any time without duplicating or overwriting user data:
 ```powershell
 python seed_demo_user.py
 ```
+
+---
+
+## 7. Persistent Backend Database & Synchronized Patient Records
+
+The application implements a persistent backend storage architecture in SQLite (`instance/skin_cancer.db`) inside the project folder. No temporary browser storage, session variables, or CSV files are used as the primary data store.
+
+### Key Architectural Components
+1. **Persistent SQLite Database (`instance/skin_cancer.db`):**
+   - `users`: Core account identity, unique integer IDs, full name, email, username, scrypt password hashes, role, timestamps.
+   - `patient_medical_profiles`: Separated patient medical information including voluntary medical history, active skin concerns & symptoms, allergies, sun exposure habits, Fitzpatrick skin phototype, family cancer history, contact phone, emergency contact, verification status, and clinical administrative notes.
+   - `analysis_records`: Lesion screening submissions, original and unique filenames, relative file paths, model predictions, confidence scores, engine status, symptoms noted by patient, and PDF report paths.
+   - `audit_logs`: Immutable security audit log tracking record modifications, actions, timestamps, and authorized administrator user IDs.
+2. **Dedicated Persistent File Storage:**
+   - `uploads/patient_images/`: Uploaded skin lesion photographs stored using unique safe identifiers (`user_{id}_{uuid}.{ext}`).
+   - `uploads/reports/`: Permanent storage for generated ReportLab clinical screening PDF reports.
+3. **Two-Way Patient & Admin Dashboard Synchronization:**
+   - Both portals read directly from the exact same SQLite database tables.
+   - When a patient updates their personal medical concerns or uploads an image, the administrator portal immediately displays the latest information upon search or reload.
+   - When an administrator updates a patient's verification status or enters clinical notes, the patient's dashboard immediately updates upon subsequent load.
+4. **Data Isolation & Role-Based Access Control:**
+   - Server-side authorization ensures non-admin patients can strictly view and download only their own records, images, and reports (HTTP 403 Forbidden for cross-patient access).
+   - Administrative endpoints (`/admin`, `/admin/patient/<id>`, `/admin/export-patients-csv`) strictly reject unauthorized or non-admin requests.
+5. **Secure CSV Export with Formula Injection Defense:**
+   - Administrators can export patient records to CSV (`/admin/export-patients-csv`).
+   - Every cell is sanitized against spreadsheet formula injection (CWE-1236), prepending single quotes to values starting with `=`, `+`, `-`, `@`, `\t`, or `\r`.
 
 ---
 
@@ -257,12 +294,25 @@ Per updated project requirements:
 - Visiting `/test-cases` gracefully redirects (HTTP 302) to the application Home page.
 - Internal test case data and execution states are preserved intact inside the SQLite database (`test_cases` table) and programmatic CSV exports remain fully functional.
 
-### B. Automated Test Suite (21 Tests — 100% Pass Rate)
+### B. Automated Test Suite (33 Tests — 100% Pass Rate)
 Run the full automated test suite using `pytest` or by double-clicking `run_tests.bat`:
 ```powershell
 python -m pytest -v
 ```
-**Test Suite Verification: 21 / 21 PASSED (100%)**
+**Test Suite Verification: 33 / 33 PASSED (100%)**
+- `test_patient_sync.py` (12 tests — Backend Persistence & Synchronization Verification):
+  - `Scenario 01`: Patient registration persistence in SQLite database.
+  - `Scenario 02`: Server restart simulation (data survives restart and fresh client sessions).
+  - `Scenario 03`: Patient medical history, skin concerns, and risk factors saving & retrieval.
+  - `Scenario 04`: Admin dashboard & patient detail views reflect patient-entered medical information.
+  - `Scenario 05`: Admin updates to verification status and clinical notes immediately reflect on patient dashboard.
+  - `Scenario 06`: Lesion image uploads saved to dedicated persistent directory (`uploads/patient_images/`) with symptoms noted.
+  - `Scenario 07`: Prediction history and official PDF report generation and retrieval by authorized user.
+  - `Scenario 08`: Cross-patient data isolation (Patient A cannot view or download Patient B's records, images, or PDFs — HTTP 403).
+  - `Scenario 09`: Admin-only endpoints (`/admin`, `/admin/patient/<id>`, `/admin/export-patients-csv`) strictly blocked for non-admins (HTTP 403).
+  - `Scenario 10`: Demo / educational benchmark simulation records clearly labelled separately from genuine deep learning inferences.
+  - `Scenario 11`: Authorized admin CSV export sanitizes spreadsheet formula injection characters (`=`, `+`, `-`, `@`, `\t`, `\r` — CWE-1236).
+  - `Scenario 12`: Application startup & database initialization idempotency (no schema corruption or data loss on restart).
 - `test_auth.py` (4 tests):
   - `TC-01`: Registration, valid credentials login, dashboard redirection.
   - `TC-02`: Unregistered email blocking, wrong password rejection.

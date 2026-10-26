@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import io
 import json
 from datetime import datetime
@@ -219,9 +220,14 @@ def generate_screening_report_pdf(record, user, output_stream):
     file_path = record['file_path']
     if not (file_path and os.path.exists(file_path)) and record.get('stored_filename'):
         from config import Config
-        fallback = Config.UPLOAD_FOLDER / record['stored_filename']
-        if fallback.exists():
-            file_path = str(fallback)
+        for cand in [
+            Config.PATIENT_IMAGES_FOLDER / record['stored_filename'],
+            Config.UPLOAD_FOLDER / record['stored_filename'],
+            Config.REPORTS_FOLDER / record['stored_filename']
+        ]:
+            if cand.exists():
+                file_path = str(cand)
+                break
 
     if file_path and os.path.exists(file_path):
         try:
@@ -290,3 +296,30 @@ def generate_screening_report_pdf(record, user, output_stream):
     elements.append(disclaimer_table)
     
     doc.build(elements)
+
+def save_screening_report_pdf(record, user):
+    """
+    Builds and permanently saves a clinical screening report PDF to uploads/reports/.
+    Returns the relative path for database storage.
+    """
+    from config import Config
+    from database.db import update_analysis_record_pdf_path
+    from flask import has_app_context, current_app
+    
+    if has_app_context() and 'REPORTS_FOLDER' in current_app.config:
+        reports_dir = Path(current_app.config['REPORTS_FOLDER'])
+    elif has_app_context() and 'UPLOAD_FOLDER' in current_app.config:
+        reports_dir = Path(current_app.config['UPLOAD_FOLDER']) / 'reports'
+    else:
+        reports_dir = Config.REPORTS_FOLDER
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    
+    filename = f"report_record_{record['id']}_user_{user['id']}.pdf"
+    full_path = reports_dir / filename
+    
+    with open(full_path, 'wb') as f:
+        generate_screening_report_pdf(record, user, f)
+        
+    rel_path = f"uploads/reports/{filename}"
+    update_analysis_record_pdf_path(record['id'], rel_path)
+    return full_path, rel_path

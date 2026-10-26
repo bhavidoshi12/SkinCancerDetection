@@ -118,6 +118,141 @@
       </div>
     </div>
 
+    <!-- Synchronized Patient Medical Profile Section -->
+    <div class="card card-clean" style="margin-top: 2.5rem; padding: 2rem; border: 1px solid var(--color-border);">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.25rem;">
+            <span class="badge {% if profile.verification_status == 'Verified by Physician' %}badge-success{% elif profile.verification_status == 'Follow-up Recommended' %}badge-danger{% else %}badge-sage{% endif %}">
+              {{ profile.verification_status or 'Unverified' }}
+            </span>
+            <span style="font-size: 0.8rem; color: var(--color-text-muted);">
+              Patient ID: <strong>#{{ "%05d"|format(user.id) }}</strong>
+            </span>
+          </div>
+          <h2 class="heading-serif" style="font-size: 1.5rem; margin-bottom: 0.25rem;">
+            Personal Medical Profile & Skin Health Information
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+            Persistently stored in the backend database and synchronized directly with the clinical administrator portal.
+          </p>
+        </div>
+
+        <div style="text-align: right;">
+          <span style="font-size: 0.75rem; color: var(--color-text-muted); display: block;">Last Updated in Database:</span>
+          <span class="badge" style="background: var(--color-warm-beige); color: var(--color-dark-brown); font-family: monospace;">
+            {{ profile.updated_at[:16] if profile.updated_at else 'Just now' }}
+          </span>
+        </div>
+      </div>
+
+      {% if profile.admin_notes %}
+        <div style="background: #eef6ed; border-left: 4px solid var(--color-success); padding: 1rem 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+            <strong style="color: #2b593f; font-size: 0.95rem;">Physician / Clinical Administrator Note</strong>
+            <span class="badge badge-success" style="font-size: 0.7rem;">Synchronized from Clinic</span>
+          </div>
+          <p style="color: #28442c; font-size: 0.9rem; margin: 0; line-height: 1.5;">
+            {{ profile.admin_notes }}
+          </p>
+        </div>
+      {% endif %}
+
+      <!-- Current Saved Summary Display -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div style="background: var(--color-cream); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--color-dark-sage);">Current Skin Concerns & Symptoms</h4>
+          <p style="font-size: 0.88rem; color: var(--color-dark-brown); margin: 0; line-height: 1.5;">
+            {{ profile.skin_concerns or 'No active skin concerns or symptoms currently recorded.' }}
+          </p>
+        </div>
+
+        <div style="background: var(--color-cream); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--color-dark-sage);">Voluntary Medical History & Allergies</h4>
+          <p style="font-size: 0.88rem; color: var(--color-dark-brown); margin: 0 0 0.4rem 0; line-height: 1.5;">
+            <strong>History:</strong> {{ profile.medical_history or 'None documented.' }}
+          </p>
+          <p style="font-size: 0.88rem; color: var(--color-dark-brown); margin: 0; line-height: 1.5;">
+            <strong>Allergies:</strong> {{ profile.allergies or 'No known drug allergies.' }}
+          </p>
+        </div>
+
+        <div style="background: var(--color-cream); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--color-dark-sage);">Dermatological Risk Factors</h4>
+          <p style="font-size: 0.88rem; color: var(--color-dark-brown); margin: 0 0 0.35rem 0;">
+            <strong>Sun Exposure:</strong> {{ profile.sun_exposure_level or 'Moderate' }}
+          </p>
+          <p style="font-size: 0.88rem; color: var(--color-dark-brown); margin: 0 0 0.35rem 0;">
+            <strong>Skin Phototype:</strong> {{ profile.fitzpatrick_skin_type or 'Type II' }}
+          </p>
+          <p style="font-size: 0.88rem; color: var(--color-dark-brown); margin: 0;">
+            <strong>Family History:</strong> {{ profile.family_history_skin_cancer or 'None' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Update Medical Information Form (Collapsible/Inline) -->
+      <details style="background: var(--color-warm-beige); border-radius: var(--radius-sm); border: 1px solid var(--color-border); padding: 1rem 1.25rem;">
+        <summary style="font-weight: 600; cursor: pointer; color: var(--color-dark-brown);">
+          <span>&#9998; Click here to update your medical history, symptoms, or skin concerns</span>
+        </summary>
+        
+        <form method="POST" action="{{ url_for('analysis.update_patient_medical_profile_view') }}" style="margin-top: 1.25rem;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="skin_concerns">Current Skin Symptoms / Lesion Concerns</label>
+              <textarea id="skin_concerns" name="skin_concerns" class="form-control" rows="3" placeholder="Describe any itching, bleeding, rapid change, or spots of concern...">{{ profile.skin_concerns or '' }}</textarea>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="medical_history">Voluntary Personal / Family Medical History</label>
+              <textarea id="medical_history" name="medical_history" class="form-control" rows="3" placeholder="Previous biopsies, family melanoma history, eczema, etc.">{{ profile.medical_history or '' }}</textarea>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="allergies">Known Allergies</label>
+              <input type="text" id="allergies" name="allergies" class="form-control" value="{{ profile.allergies or '' }}" placeholder="Medications, latex, or None">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="sun_exposure_level">Sun Exposure Habit</label>
+              <select id="sun_exposure_level" name="sun_exposure_level" class="form-control">
+                <option value="Low" {% if profile.sun_exposure_level == 'Low' %}selected{% endif %}>Low (Primarily indoors)</option>
+                <option value="Moderate" {% if profile.sun_exposure_level == 'Moderate' %}selected{% endif %}>Moderate (Regular outdoor activity)</option>
+                <option value="High" {% if profile.sun_exposure_level == 'High' or 'High' in profile.sun_exposure_level %}selected{% endif %}>High (Frequent sports/beach)</option>
+                <option value="Severe / Outdoor Work" {% if 'Outdoor Work' in profile.sun_exposure_level %}selected{% endif %}>Severe / Outdoor Work</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="fitzpatrick_skin_type">Fitzpatrick Phototype</label>
+              <select id="fitzpatrick_skin_type" name="fitzpatrick_skin_type" class="form-control">
+                <option value="Type I (Burns always, never tans)" {% if 'Type I (' in profile.fitzpatrick_skin_type %}selected{% endif %}>Type I (Burns easily, never tans)</option>
+                <option value="Type II (Burns easily, tans minimally)" {% if 'Type II' in profile.fitzpatrick_skin_type %}selected{% endif %}>Type II (Fair skin, burns easily)</option>
+                <option value="Type III (Burns moderately, tans gradually)" {% if 'Type III' in profile.fitzpatrick_skin_type %}selected{% endif %}>Type III (Medium / Olive tone)</option>
+                <option value="Type IV (Burns minimally, tans well)" {% if 'Type IV' in profile.fitzpatrick_skin_type %}selected{% endif %}>Type IV (Olive / Brown skin)</option>
+                <option value="Type V (Rarely burns, tans profusely)" {% if 'Type V' in profile.fitzpatrick_skin_type %}selected{% endif %}>Type V (Dark Brown skin)</option>
+                <option value="Type VI (Never burns, deeply pigmented)" {% if 'Type VI' in profile.fitzpatrick_skin_type %}selected{% endif %}>Type VI (Deeply pigmented skin)</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label" for="emergency_contact">Emergency Contact / Physician</label>
+              <input type="text" id="emergency_contact" name="emergency_contact" class="form-control" value="{{ profile.emergency_contact or '' }}" placeholder="Name and phone number">
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary btn-sm">
+              Save & Synchronize Medical Profile
+            </button>
+          </div>
+        </form>
+      </details>
+    </div>
+
     <!-- Recent Analyses Section -->
     <div style="margin-top: 2.5rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
@@ -158,7 +293,17 @@
                   </td>
                   <td style="padding: 1rem 1.25rem;">
                     <strong>{{ rec.original_filename }}</strong><br/>
-                    <span style="font-size: 0.8rem; color: var(--color-text-muted);">{{ rec.created_at[:16] }}</span>
+                    <span style="font-size: 0.8rem; color: var(--color-text-muted);">
+                      {{ rec.created_at[:16] }}
+                      {% if rec.updated_at and rec.updated_at[:16] != rec.created_at[:16] %}
+                        <span title="Last updated" style="font-size: 0.75rem; color: var(--color-dark-sage);">&bull; Updated {{ rec.updated_at[:16] }}</span>
+                      {% endif %}
+                    </span>
+                    {% if rec.symptoms_noted %}
+                      <div style="font-size: 0.78rem; color: var(--color-dark-brown); margin-top: 0.35rem; background: var(--color-warm-beige); padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block;">
+                        <em>Symptoms:</em> {{ rec.symptoms_noted }}
+                      </div>
+                    {% endif %}
                   </td>
                   <td style="padding: 1rem 1.25rem;">
                     <span style="font-weight: 600; color: {% if 'Malignant' in rec.classification or 'Melanoma' in rec.classification %}var(--color-danger){% else %}var(--color-dark-sage){% endif %};">
@@ -174,7 +319,7 @@
                   </td>
                   <td style="padding: 1rem 1.25rem;">
                     {% if rec.result_status == 'genuine_model' and not rec.is_demo %}
-                      <span class="badge badge-success">Genuine Model Prediction</span>
+                      <span class="badge badge-success">Actual Model Inference</span>
                     {% else %}
                       <span class="badge badge-warning">Demo / Sample Record</span>
                     {% endif %}

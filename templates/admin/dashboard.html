@@ -136,61 +136,114 @@
       </div>
     </div>
 
-    <!-- Section 1: User Accounts Directory -->
+    <!-- Section 1: User Accounts & Patient Medical Directory -->
     <div class="card card-clean" style="margin-bottom: 2.5rem; padding: 2rem;">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
         <div>
           <h2 class="heading-serif" style="font-size: 1.4rem; margin-bottom: 0.25rem;">
-            Registered User Directory
+            Synchronized Patient & Medical Directory
           </h2>
           <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
-            Role-Based Access Control (RBAC) overview. Cryptographic password hashes and personal session keys are omitted for security.
+            Unified backend records synchronized with patient dashboards. Manage clinical verification, review self-reported histories, and inspect scans.
           </p>
         </div>
-        <span class="badge badge-sage">{{ users|length }} User Accounts</span>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <a href="{{ url_for('admin.export_patients_csv') }}" class="btn btn-secondary btn-sm" title="Download sanitized CSV export of all patient medical records">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem; vertical-align: text-bottom;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Export Patient Records (CSV)
+          </a>
+          <span class="badge badge-sage">{{ users|length }} Matched Patients</span>
+        </div>
       </div>
+
+      <!-- Real-Time Patient Search Bar -->
+      <form method="GET" action="{{ url_for('admin.dashboard') }}" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+          <div style="flex: 1; min-width: 260px;">
+            <input 
+              type="text" 
+              name="q" 
+              class="form-control" 
+              placeholder="Search by Patient ID, Name, Email, or Username..." 
+              value="{{ search_query or '' }}"
+              style="background: var(--color-cream); height: 42px;"
+            >
+          </div>
+          <button type="submit" class="btn btn-primary" style="height: 42px;">
+            Search Records
+          </button>
+          {% if search_query %}
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline" style="height: 42px;">
+              Clear Search
+            </a>
+          {% endif %}
+        </div>
+      </form>
 
       <div class="table-responsive">
         <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
           <thead>
             <tr style="text-align: left; border-bottom: 2px solid var(--color-border); background-color: var(--color-warm-beige);">
               <th style="padding: 0.75rem 1rem;">ID</th>
-              <th style="padding: 0.75rem 1rem;">Full Name</th>
-              <th style="padding: 0.75rem 1rem;">Email Address</th>
-              <th style="padding: 0.75rem 1rem;">Username</th>
-              <th style="padding: 0.75rem 1rem;">Role</th>
+              <th style="padding: 0.75rem 1rem;">Full Name & Account</th>
+              <th style="padding: 0.75rem 1rem;">Verification Status</th>
+              <th style="padding: 0.75rem 1rem;">Self-Reported Concerns</th>
               <th style="padding: 0.75rem 1rem; text-align: center;">Scans</th>
-              <th style="padding: 0.75rem 1rem;">Registered On</th>
+              <th style="padding: 0.75rem 1rem;">Registered / Updated</th>
+              <th style="padding: 0.75rem 1rem; text-align: right;">Action</th>
             </tr>
           </thead>
           <tbody>
             {% for u in users %}
               <tr style="border-bottom: 1px solid var(--color-border); {% if u.role == 'admin' %}background: #fff5f6;{% endif %}">
                 <td style="padding: 0.75rem 1rem; font-weight: 600; color: var(--color-text-muted);">#{{ u.id }}</td>
-                <td style="padding: 0.75rem 1rem; font-weight: 600;">
-                  {{ u.full_name }}
+                <td style="padding: 0.75rem 1rem;">
+                  <strong>{{ u.full_name }}</strong>
                   {% if u.id == current_user.id %}
-                    <span class="badge badge-sage" style="font-size: 0.65rem; margin-left: 0.35rem;">You</span>
+                    <span class="badge badge-sage" style="font-size: 0.65rem; margin-left: 0.25rem;">You</span>
                   {% endif %}
-                </td>
-                <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.85rem;">{{ u.email }}</td>
-                <td style="padding: 0.75rem 1rem; color: var(--color-text-muted);">
-                  {% if u.username %}@{{ u.username }}{% else %}<span style="opacity: 0.5;">&mdash;</span>{% endif %}
+                  {% if u.role == 'admin' %}
+                    <span class="badge badge-danger" style="font-size: 0.65rem; margin-left: 0.25rem;">Admin</span>
+                  {% endif %}
+                  <div style="font-size: 0.8rem; color: var(--color-text-muted); font-family: monospace;">{{ u.email }}</div>
                 </td>
                 <td style="padding: 0.75rem 1rem;">
-                  {% if u.role == 'admin' %}
-                    <span class="badge badge-danger" style="font-size: 0.7rem;">Administrator</span>
-                  {% elif u.role == 'physician' %}
-                    <span class="badge badge-sage" style="font-size: 0.7rem;">Physician</span>
+                  {% if u.verification_status == 'Verified by Physician' %}
+                    <span class="badge badge-success" style="font-size: 0.75rem;">Verified</span>
+                  {% elif u.verification_status == 'Pending Review' %}
+                    <span class="badge badge-warning" style="font-size: 0.75rem;">Pending Review</span>
+                  {% elif u.verification_status == 'Follow-up Recommended' %}
+                    <span class="badge badge-danger" style="font-size: 0.75rem;">Follow-up Required</span>
                   {% else %}
-                    <span class="badge badge-secondary" style="font-size: 0.7rem; background: var(--color-warm-beige); color: var(--color-dark-brown);">Patient</span>
+                    <span class="badge badge-secondary" style="font-size: 0.75rem; background: var(--color-warm-beige); color: var(--color-dark-brown);">Unverified</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem; max-width: 220px;">
+                  {% if u.skin_concerns %}
+                    <span style="font-size: 0.82rem; color: var(--color-dark-brown); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="{{ u.skin_concerns }}">
+                      {{ u.skin_concerns }}
+                    </span>
+                  {% else %}
+                    <span style="color: var(--color-text-muted); font-size: 0.8rem; font-style: italic;">None entered</span>
                   {% endif %}
                 </td>
                 <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 600;">
                   {{ u.analysis_count }}
                 </td>
-                <td style="padding: 0.75rem 1rem; font-size: 0.85rem; color: var(--color-text-muted);">
-                  {{ u.created_at[:10] if u.created_at else 'Prior' }}
+                <td style="padding: 0.75rem 1rem; font-size: 0.82rem; color: var(--color-text-muted);">
+                  <div>Created: {{ u.created_at[:10] if u.created_at else 'Prior' }}</div>
+                  {% if u.profile_updated_at %}
+                    <div style="color: var(--color-dark-sage); font-size: 0.75rem;">Updated: {{ u.profile_updated_at[:10] }}</div>
+                  {% endif %}
+                </td>
+                <td style="padding: 0.75rem 1rem; text-align: right; white-space: nowrap;">
+                  <a href="{{ url_for('admin.patient_detail', user_id=u.id) }}" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;">
+                    Manage Record &rarr;
+                  </a>
                 </td>
               </tr>
             {% endfor %}
@@ -293,6 +346,67 @@
       {% else %}
         <p style="color: var(--color-text-muted); text-align: center; padding: 2rem 0;">
           No screening records have been created in the database yet.
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- Section 3: Clinical & Administrative Audit Trail -->
+    <div class="card card-clean" style="margin-top: 2.5rem; padding: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--color-border); padding-bottom: 1rem;">
+        <div>
+          <h2 class="heading-serif" style="font-size: 1.4rem; margin-bottom: 0.25rem;">
+            Security & Clinical Record Audit Trail
+          </h2>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+            Immutable event log tracking administrative modifications, verification status changes, and patient data synchronization events.
+          </p>
+        </div>
+        <span class="badge badge-sage">Recent Audit Events</span>
+      </div>
+
+      {% if recent_audits %}
+        <div class="table-responsive">
+          <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+              <tr style="text-align: left; border-bottom: 2px solid var(--color-border); background-color: var(--color-warm-beige);">
+                <th style="padding: 0.75rem 0.85rem;">Timestamp</th>
+                <th style="padding: 0.75rem 0.85rem;">Action Taken</th>
+                <th style="padding: 0.75rem 0.85rem;">Target Record</th>
+                <th style="padding: 0.75rem 0.85rem;">Performed By</th>
+                <th style="padding: 0.75rem 0.85rem;">Details & Justification</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in recent_audits %}
+                <tr style="border-bottom: 1px solid var(--color-border);">
+                  <td style="padding: 0.75rem 0.85rem; font-family: monospace; font-size: 0.8rem; color: var(--color-text-muted);">
+                    {{ log.timestamp[:19] }}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem;">
+                    <span class="badge badge-sage" style="font-size: 0.75rem;">{{ log.action }}</span>
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem; font-weight: 600;">
+                    {{ log.record_type }} #{{ log.record_id }}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem;">
+                    {% if log.admin_name %}
+                      <strong>{{ log.admin_name }}</strong>
+                      <span style="font-size: 0.75rem; color: var(--color-text-muted);">({{ log.admin_email }})</span>
+                    {% else %}
+                      <span style="color: var(--color-text-muted);">User #{{ log.changed_by_user_id }}</span>
+                    {% endif %}
+                  </td>
+                  <td style="padding: 0.75rem 0.85rem; font-size: 0.82rem; color: var(--color-dark-brown);">
+                    {{ log.details or 'Record updated.' }}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="color: var(--color-text-muted); text-align: center; padding: 2rem 0;">
+          No audit records currently logged in this database session.
         </p>
       {% endif %}
     </div>

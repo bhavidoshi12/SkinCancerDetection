@@ -96,8 +96,26 @@
           </button>
         </div>
 
+        <!-- Clinical Symptoms & Patient Concerns (Optional) -->
+        <div style="margin-top: 1.75rem; text-align: left; background: var(--color-warm-beige); padding: 1.25rem; border-radius: var(--radius-sm); border: 1px solid var(--color-border);">
+          <label class="form-label" for="symptoms" style="font-weight: 600; color: var(--color-dark-brown); font-size: 0.95rem;">
+            Skin Symptoms or Lesion Concerns (Optional)
+          </label>
+          <textarea 
+            id="symptoms" 
+            name="symptoms" 
+            class="form-control" 
+            rows="2" 
+            placeholder="e.g. Mild itching noticed over past 2 weeks, rapid darkening, lesion location (left shoulder)..."
+            style="background: #fff;"
+          ></textarea>
+          <small style="color: var(--color-text-muted); font-size: 0.8rem; display: block; margin-top: 0.4rem;">
+            Documenting symptoms helps provide contextual record keeping for your screening archive and official PDF clinical reports.
+          </small>
+        </div>
+
         <!-- Submit Button -->
-        <div style="margin-top: 2rem;">
+        <div style="margin-top: 1.5rem;">
           <button type="submit" id="analyzeBtn" class="btn btn-primary btn-block btn-lg" disabled>
             <span class="spinner" id="analyzeSpinner" style="display: none; margin-right: 0.5rem;"></span>
             <span id="analyzeBtnText">Analyze Image</span>
